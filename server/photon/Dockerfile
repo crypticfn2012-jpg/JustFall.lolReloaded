@@ -10,9 +10,8 @@ RUN git clone https://github.com/Segually/photon-server.git photon-server \
     && git checkout 1e7cf407ad835a95d7e91e8a005bcc7df46732a4
 
 COPY server/photon/patch_server.py /tmp/patch_server.py
-RUN python3 /tmp/patch_server.py
-
 WORKDIR /src/photon-server
+RUN python3 /tmp/patch_server.py
 RUN dotnet publish photon-server.csproj -c Release -o /out --no-self-contained
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
