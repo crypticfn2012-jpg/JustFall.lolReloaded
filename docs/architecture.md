@@ -1,44 +1,25 @@
-# JustFall.lol Reloaded architecture
+# Architecture
 
-## Target
+The public site is hosted by GitHub Pages.
 
-The original Unity WebGL client remains the game client.
+The game itself stays the preserved Unity WebGL build. The browser connects to the replacement multiplayer service over secure WebSockets.
 
-```
-Browser
-  |
-  v
-Reloaded website
-  |
-  v
+```text
+GitHub Pages
+    ↓
 Original Unity WebGL client
-  |
-  | Photon-compatible WebSocket protocol
-  v
-Reloaded networking gateway
-  |
-  +--> matchmaking / rooms / relay
-  |
-  +--> Supabase: accounts, profiles, unlocks, stats
+    ↓
+WSS gateway
+    ↓
+Photon-compatible relay
+    ↓
+rooms / matchmaking / player events
+    ↓
+Supabase (accounts and persistent data)
 ```
 
-## Why the current JSON WebSocket server is not the final multiplayer backend
+The relay is a room/event server. The Unity client still owns the actual game presentation and gameplay code.
 
-The old Unity client does not speak the JSON protocol used by the temporary Reloaded prototype. Photon Realtime uses a binary operation/event protocol over WebSocket for WebGL clients. A compatibility server must therefore implement the client-visible Photon behavior instead of translating arbitrary REST calls.
+The important compatibility point is the transport: the original WebGL client uses Photon's binary protocol over WebSocket, so the gateway cannot turn the connection into JSON messages.
 
-The existing JSON server is retained only as a development harness and reference for room/game-state behavior. It is not claimed to be compatible with the original Unity client.
-
-## Current milestones
-
-- [x] Preserve/identify original Unity WebGL build
-- [x] Launch original Unity WebGL client from Reloaded
-- [x] Confirm original client reaches historical Photon service
-- [ ] Capture exact original Photon handshake
-- [ ] Implement compatible WebSocket transport
-- [ ] Region/master/game-server flow
-- [ ] Room join/create
-- [ ] Original player synchronization
-- [ ] Original game events
-- [ ] Supabase account bridge
-- [ ] All original client modes verified
-- [ ] Public deployment
+Public multiplayer is only considered restored once the preserved client can complete its Photon connection, enter a room and exchange the game's actual events with another client.
