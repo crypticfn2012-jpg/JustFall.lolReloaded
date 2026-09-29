@@ -2,38 +2,29 @@
 
 Community preservation project targeting the **original JustFall.LOL Unity WebGL client**.
 
-## Play the original client
+## Original client
+The game at `/original/` is the original Unity WebGL client, not a JavaScript recreation.
 
-Run the project and open:
-
-`/original/`
-
-The launcher loads the original Unity WebGL distribution rather than a JavaScript recreation. The original game uses Unity WebGL and its preserved package contains `UnityLoader.js`, `WebGL.json`, the Unity data file and WASM files.
-
-Public mirrors of the original WebGL package are still available, including copies referenced by archived game collections. The local preserved build at:
-
+The preserved local build is:
 `C:\Users\crypt\Downloads\JustFallEmulator\just-fall`
 
-remains the preferred source when working from the original files.
+The public page loads the original Unity WebGL package and intercepts its Photon WebSocket connection before Unity starts.
 
-## Multiplayer restoration
+## Multiplayer backend
+The repository now contains the networking path required by the original WebGL client:
+`Original Unity WebGL → WSS bridge → Photon-compatible relay → rooms/matchmaking`
 
-The original client reaches the historical Photon Realtime service, but the old application now reports `ApplicationArchived`. The final Reloaded backend therefore needs to speak the client's Photon-compatible binary WebSocket protocol.
+The bridge converts browser WebSocket frames into the Photon reliable-UDP transport used by the relay. The relay provides authentication, region discovery, lobbies, room creation/joining, random matchmaking, room redirects and event/player relay.
 
-This repository does **not** pretend that the temporary JSON room server is compatible with the Unity client. It is only a development harness until the Photon compatibility layer is implemented.
+The old JSON/fake game server has been removed.
 
-Photon's WebGL transport uses WebSocket while the payload remains Photon's binary protocol, so a REST API or JSON WebSocket endpoint cannot replace it.
-
-See:
-
-- `docs/original-client.md`
-- `docs/architecture.md`
-- `supabase/migrations/001_reloaded_accounts.sql`
+## Deployment
+`render.yaml` defines:
+- `justfall-ws` — public WebSocket service
+- `justfall-photon` — private Photon relay
 
 ## Supabase
-
-Supabase is intended for persistent data such as:
-
+Supabase is reserved for persistent data:
 - accounts
 - display names
 - cosmetic selections
@@ -41,29 +32,12 @@ Supabase is intended for persistent data such as:
 - statistics
 - match history
 
-The realtime game loop should remain on the dedicated networking server.
+The realtime game loop remains on the networking server.
 
-## Local development
+## Status
+**Original Unity client:** ready.
+**Fake JavaScript game:** removed from the server path.
+**Photon-compatible WSS path:** implemented.
+**Public multiplayer:** deploy `render.yaml`, then the original client uses the deployed WSS bridge.
 
-Requires Node.js 18+.
-
-```bash
-npm install
-npm start
-```
-
-Open:
-
-`http://localhost:8080/`
-
-The root page links to the original Unity client at `/original/`.
-
-## Important status
-
-**Original Unity client:** available and launchable.
-
-**Original gameplay/assets:** preserved in the Unity WebGL build.
-
-**Original Photon multiplayer:** not restored yet. The remaining blocker is protocol compatibility with the archived Photon backend.
-
-**Reloaded JSON server:** development harness only; not the final original-client server.
+The exact compiled JustFall client remains the final compatibility test because its Photon operations are inside the Unity WebGL build.
