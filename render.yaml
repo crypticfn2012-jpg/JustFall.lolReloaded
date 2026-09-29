@@ -1,8 +1,33 @@
 services:
+  - type: pserv
+    name: justfall-photon
+    runtime: docker
+    plan: 1c-2g
+    region: frankfurt
+    dockerfilePath: ./server/photon/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PUBLIC_HOST
+        fromService:
+          name: justfall-ws
+          type: web
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+
   - type: web
-    name: justfall-lol-reloaded
-    runtime: node
-    plan: free
-    buildCommand: npm install
-    startCommand: npm start
+    name: justfall-ws
+    runtime: docker
+    plan: 1c-2g
+    region: frankfurt
+    dockerfilePath: ./server/bridge.Dockerfile
+    dockerContext: .
     healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: PHOTON_HOST
+        fromService:
+          name: justfall-photon
+          type: pserv
+          property: host
+      - key: PHOTON_PORT
+        value: "27001"
