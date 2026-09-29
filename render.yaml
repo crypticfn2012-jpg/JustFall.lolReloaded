@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: sh server/render_build.sh
+    buildCommand: bash server/render_build.sh
     startCommand: sh server/render_start.sh
     healthCheckPath: /health
     envVars:
