@@ -2,6 +2,7 @@ from pathlib import Path
 
 protocol = Path("/src/photon-server/Protocol.cs")
 s = protocol.read_text()
+
 s = s.replace(
     "public const byte Authenticate   = 230;",
     "public const byte Authenticate   = 230;\n        public const byte GetRegions    = 220;"
@@ -23,11 +24,11 @@ insert = """                case OpCode.GetRegions:
                     var resp = BuildOpResp(peer, OpCode.GetRegions, 0, null,
                         new Dictionary<byte, object?>
                         {
-                            [Param.Region] = new[] { "eu" },
+                            [Param.Region] = new[] { _config.Region },
                             [Param.Address] = new[] { _publicAddress }
                         });
                     SendReliableMessage(peer, cmd.Channel, resp);
-                    Log($"[{peer.EndPoint}]   GET REGIONS -> eu / {_publicAddress}");
+                    Log($"[{peer.EndPoint}]   GET REGIONS -> {_config.Region} / {_publicAddress}");
                     break;
                 }
                 case OpCode.Authenticate:
@@ -36,16 +37,5 @@ insert = """                case OpCode.GetRegions:
 if needle not in s:
     raise SystemExit("Authenticate switch location not found")
 s = s.replace(needle, insert, 1)
-
-needle = """                            [Param.Secret] = peer.SessionToken,
-                            [Param.UserId] = peer.UserId,
-"""
-replace = """                            [Param.Secret] = peer.SessionToken,
-                            [Param.UserId] = peer.UserId,
-                            [Param.Address] = _publicAddress,
-"""
-if needle not in s:
-    raise SystemExit("Auth response location not found")
-s = s.replace(needle, replace, 1)
 
 server.write_text(s)
