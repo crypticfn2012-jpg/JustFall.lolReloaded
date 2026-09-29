@@ -17,16 +17,22 @@ jobs:
           test -f web/style.css
           test -f web/original/index.html
 
-      - name: Check bridge package
+      - name: Install bridge dependencies
         working-directory: server
         run: npm install --package-lock-only --ignore-scripts
 
       - name: Syntax check bridge
         run: node --check photon_ws_bridge.js
 
-      - name: Check server deployment files
+      - name: Check deployment files
         run: |
           test -f server/bridge.Dockerfile
           test -f server/photon/Dockerfile
           test -f server/photon_entrypoint.sh
           test -f render.yaml
+
+      - name: Build WSS bridge image
+        run: docker build -f server/bridge.Dockerfile -t justfall-ws-test .
+
+      - name: Build Photon relay image
+        run: docker build -f server/photon/Dockerfile -t justfall-photon-test .
