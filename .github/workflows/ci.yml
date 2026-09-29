@@ -19,16 +19,21 @@ jobs:
 
       - name: Install bridge dependencies
         working-directory: server
-        run: npm install --package-lock-only --ignore-scripts
+        run: npm install --ignore-scripts
 
       - name: Syntax check bridge
+        working-directory: server
         run: node --check photon_ws_bridge.js
+
+      - name: Test Photon WSS transport
+        run: node server/test_bridge.js
 
       - name: Check deployment files
         run: |
           test -f server/bridge.Dockerfile
           test -f server/photon/Dockerfile
           test -f server/photon_entrypoint.sh
+          test -f server/photon/patch_server.py
           test -f render.yaml
 
       - name: Build WSS bridge image
