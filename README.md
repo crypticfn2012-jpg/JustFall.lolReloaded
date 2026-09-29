@@ -1,45 +1,69 @@
 # JustFall.lol Reloaded
 
-A playable community preservation/reimplementation of the old JustFall.lol browser experience.
+Community preservation project targeting the **original JustFall.LOL Unity WebGL client**.
 
-## Playable
+## Play the original client
 
-Four modes are implemented:
+Run the project and open:
 
-- Hexagon: disappearing ice survival with multiple rounds
-- Just Blocks: collapsing floor survival
-- Just Jump: rotating hazard timing mode
-- Parkour: checkpoint race to the finish
+`/original/`
 
-Each room has up to 8 players. Empty slots are filled with server-side bots so a single browser can immediately play, while multiple real browser tabs can share the same room.
+The launcher loads the original Unity WebGL distribution rather than a JavaScript recreation. The original game uses Unity WebGL and its preserved package contains `UnityLoader.js`, `WebGL.json`, the Unity data file and WASM files.
 
-Controls: WASD / Arrow keys, Space to jump, Shift to dive. Mobile touch controls are included.
+Public mirrors of the original WebGL package are still available, including copies referenced by archived game collections. The local preserved build at:
 
-## Unlocks
+`C:\Users\crypt\Downloads\JustFallEmulator\just-fall`
 
-Reloaded starts with every included cosmetic unlocked: 12 colour skins and 8 accessories. These are Reloaded cosmetics and are not presented as the exact original game's internal catalogue.
+remains the preferred source when working from the original files.
 
-## Local run
+## Multiplayer restoration
+
+The original client reaches the historical Photon Realtime service, but the old application now reports `ApplicationArchived`. The final Reloaded backend therefore needs to speak the client's Photon-compatible binary WebSocket protocol.
+
+This repository does **not** pretend that the temporary JSON room server is compatible with the Unity client. It is only a development harness until the Photon compatibility layer is implemented.
+
+Photon's WebGL transport uses WebSocket while the payload remains Photon's binary protocol, so a REST API or JSON WebSocket endpoint cannot replace it.
+
+See:
+
+- `docs/original-client.md`
+- `docs/architecture.md`
+- `supabase/migrations/001_reloaded_accounts.sql`
+
+## Supabase
+
+Supabase is intended for persistent data such as:
+
+- accounts
+- display names
+- cosmetic selections
+- unlock state
+- statistics
+- match history
+
+The realtime game loop should remain on the dedicated networking server.
+
+## Local development
 
 Requires Node.js 18+.
 
+```bash
 npm install
 npm start
+```
 
-Open http://localhost:8080/
+Open:
 
-The server exposes /health, /stats and /ws.
+`http://localhost:8080/`
 
-## Hosting
+The root page links to the original Unity client at `/original/`.
 
-Use a Node Web Service that supports WebSocket upgrades. render.yaml is included for Render.
+## Important status
 
-The browser can connect to a separate backend using ?server=wss://your-server.example/ws.
+**Original Unity client:** available and launchable.
 
-## Original client
+**Original gameplay/assets:** preserved in the Unity WebGL build.
 
-The preserved original Unity WebGL build remains outside this repository at:
+**Original Photon multiplayer:** not restored yet. The remaining blocker is protocol compatibility with the archived Photon backend.
 
-C:\Users\crypt\Downloads\JustFallEmulator\just-fall
-
-The old Unity client is still the reference target for future Photon compatibility work. This playable Reloaded build is a working replacement client/server and does not claim that the original archived Photon service has been restored.
+**Reloaded JSON server:** development harness only; not the final original-client server.
