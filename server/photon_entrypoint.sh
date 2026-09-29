@@ -35,4 +35,9 @@ cat > /app/config.json <<EOF
 EOF
 
 echo "Advertising Photon browser endpoint: $HOST"
+
+python3 /health.py &
+HEALTH_PID=$!
+trap 'kill "$HEALTH_PID" 2>/dev/null || true' EXIT
+
 exec dotnet /app/photon-server.dll
