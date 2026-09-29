@@ -1,10 +1,18 @@
 #!/bin/sh
 set -eu
+
 HOST="${PUBLIC_HOST:-localhost}"
+
 case "$HOST" in
   ws://*|wss://*) ;;
-  *) HOST="wss://$HOST" ;;
+  *) HOST="wss://$HOST/ws" ;;
 esac
+
+case "$HOST" in
+  */ws|*/ws/) ;;
+  *) HOST="${HOST%/}/ws" ;;
+esac
+
 cat > /app/config.json <<EOF
 {
   "Ports": [27001],
@@ -19,4 +27,5 @@ cat > /app/config.json <<EOF
   "EnablePlugins": false
 }
 EOF
+
 exec dotnet /app/photon-server.dll
