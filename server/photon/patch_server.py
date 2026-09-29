@@ -1,6 +1,6 @@
 from pathlib import Path
 
-protocol = Path("/src/photon-server/Protocol.cs")
+protocol = Path("Protocol.cs")
 s = protocol.read_text()
 
 s = s.replace(
@@ -19,7 +19,7 @@ if "public const byte Region          = 210;" not in s:
 
 protocol.write_text(s)
 
-server = Path("/src/photon-server/PhotonServer.cs")
+server = Path("PhotonServer.cs")
 s = server.read_text()
 
 # Render gives us the public WSS endpoint. It must be passed through exactly
