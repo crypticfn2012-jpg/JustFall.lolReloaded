@@ -8,7 +8,7 @@ DOTNET_VERSION="10.0.100"
 if [ ! -x "$ROOT/.dotnet/dotnet" ]; then
   mkdir -p "$ROOT/.dotnet"
   curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
-  sh /tmp/dotnet-install.sh --version "$DOTNET_VERSION" --install-dir "$ROOT/.dotnet" --no-path
+  bash /tmp/dotnet-install.sh --version "$DOTNET_VERSION" --install-dir "$ROOT/.dotnet" --no-path
 fi
 
 rm -rf "$ROOT/.build/photon-server"
