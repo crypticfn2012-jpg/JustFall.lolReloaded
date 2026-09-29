@@ -4,10 +4,10 @@ set -eu
 ROOT="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-cat > "$ROOT/.build/config.json" <<EOF
+cat > "$ROOT/config.json" <<EOF
 {
   "Ports": [27001],
-  "PublicHost": "justfall-ws.onrender.com:443",
+  "PublicHost": "wss://justfall-ws.onrender.com/ws",
   "MaxPeersPerRoom": 16,
   "MaxRooms": 1000,
   "RequireAppId": null,
