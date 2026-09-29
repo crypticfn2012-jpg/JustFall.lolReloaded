@@ -1,30 +1,16 @@
-# Original JustFall WebGL client
+# Original client
 
-Reloaded now treats the original Unity WebGL build as the primary client target.
+The project targets the original JustFall.LOL Unity WebGL client.
 
-The preserved build is Unity 2019.4.16f1 and contains the original game data, WASM and loader. Public mirrors of the same WebGL distribution expose the same UnityLoader/WebGL.json structure.
+Known from the preserved build:
 
-The repository launcher at `/original/` loads the preserved client distribution from a public mirror so the project can be tested without committing large binary Unity artifacts into Git.
+- Unity 2019.4.16f1
+- WebGL 2 / WebGL 1
+- original `UnityLoader.js` + `WebGL.json`
+- Photon Realtime networking
 
-## Important
+The public launcher points at a preserved copy of the original WebGL distribution so the game can be tested without putting the large Unity data files in this repository.
 
-The original client currently reaches Photon but the historical Photon application is archived. A browser cannot simply redirect the client's WSS connection to an arbitrary Reloaded server because Photon WebSocket traffic is a binary protocol, not JSON.
+The old Photon application is archived. The replacement server therefore has to reproduce the Photon connection, authentication, lobby, room and event flow expected by this particular client.
 
-The next compatibility layer therefore needs:
-
-1. Identify the exact Photon Realtime/PUN build used by this client.
-2. Identify the Name Server/master/game-server endpoints and WebSocket protocol version.
-3. Capture the client's initial operations/events.
-4. Use a clean-room Photon-compatible implementation or a purpose-built gateway.
-5. Patch only the client endpoint/configuration required to point at Reloaded.
-6. Keep the Unity gameplay/assets untouched.
-
-Do not replace the original client with a JavaScript remake.
-
-## Known public evidence
-
-Multiple public mirrors still expose the original Unity WebGL package and reference the JustFall WebGL `WebGL.json` and `UnityLoader.js` files. The project should prefer the preserved local copy when deploying privately and may use the launcher mirror only as a bootstrap/test source.
-
-## Runtime status
-
-The original Unity client has been independently confirmed to load locally. Multiplayer is not considered restored until the original client completes its network handshake against the Reloaded backend.
+A browser override is used only to redirect the client's WebSocket endpoint. The Unity game files themselves are not replaced with a JavaScript remake.
