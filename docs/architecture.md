@@ -1,11 +1,21 @@
 # Architecture
 
-Target:
-Original/compatible Unity WebGL client → Photon-compatible transport → Reloaded compatibility backend → lobby/matchmaking/rooms → Just Fall events and player state.
+Browser
+→ Reloaded HTML/JS client
+→ WebSocket /ws
+→ authoritative room server
+→ rooms, bots, players and match state
 
-The repository currently contains website/backend plumbing. It is **not** claimed to be Photon-compatible.
+The server owns movement, tile/obstacle state, eliminations and winner selection. Clients send inputs and receive snapshots.
 
-The preserved OG client remains outside this repository at:
-C:\Users\crypt\Downloads\JustFallEmulator\just-fall
+Room lifecycle:
+1. Guest auth
+2. Playlist selection
+3. Match room
+4. Fill to 8 slots with bots if needed
+5. Countdown
+6. Server simulation
+7. Results
+8. Room cleanup
 
-The next technical task is to identify the exact transport/protocol used by that build and replace the dead Photon Cloud dependency without rewriting the original gameplay unnecessarily.
+The preserved OG Unity WebGL client remains separate and is the compatibility reference for the future Photon bridge.

@@ -1,22 +1,109 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>JustFall.lol Reloaded</title>
-<link rel="stylesheet" href="/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#09100c">
+  <title>JustFall.lol Reloaded</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<main>
-<section class="card">
-<p class="eyebrow">COMMUNITY PRESERVATION</p>
-<h1>JustFall.lol Reloaded</h1>
-<p id="status">Connecting to Reloaded backend...</p>
-<button id="play">PLAY</button>
-<div class="meta"><span id="players">Players: 0</span><span id="room">Room: —</span></div>
-<p class="note">The original Unity client integration is being developed separately from this backend.</p>
-</section>
-</main>
-<script src="/app.js"></script>
+  <div id="app">
+    <div id="menu" class="screen">
+      <header class="topbar">
+        <div>
+          <div class="brand">JustFall<span>.lol</span></div>
+          <div class="subbrand">RELOADED</div>
+        </div>
+        <div class="status-pill"><i id="statusDot"></i><span id="statusText">CONNECTING</span></div>
+      </header>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow">COMMUNITY PRESERVATION</div>
+          <h1>Don't fall.</h1>
+          <p>Move, jump and outlast everyone on a floor that won't stay there forever.</p>
+          <div class="hero-actions">
+            <button id="playBtn" class="primary">PLAY</button>
+            <button id="lockerBtn" class="secondary">LOCKER</button>
+          </div>
+          <div class="tip">WASD / ARROWS to move · SPACE to jump · SHIFT to dive</div>
+        </div>
+        <div class="hero-art">
+          <canvas id="previewCanvas" width="520" height="360"></canvas>
+        </div>
+      </section>
+
+      <section class="modes">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">PLAYLIST</div>
+            <h2>Choose a mode</h2>
+          </div>
+          <div class="unlocked">ALL UNLOCKED</div>
+        </div>
+        <div id="modeGrid" class="mode-grid"></div>
+      </section>
+
+      <footer>
+        <span>JustFall.lol Reloaded</span>
+        <span id="serverInfo">0 players · 0 rooms</span>
+      </footer>
+    </div>
+
+    <div id="locker" class="screen hidden">
+      <header class="topbar">
+        <button id="lockerBack" class="back">← BACK</button>
+        <div class="brand small">LOCKER</div>
+        <div class="unlocked">ALL UNLOCKED</div>
+      </header>
+      <main class="locker-main">
+        <div>
+          <div class="eyebrow">PENGUIN</div>
+          <h2>Pick your look</h2>
+          <p class="muted">Every colour and cosmetic is unlocked for Reloaded.</p>
+        </div>
+        <div id="skinGrid" class="skin-grid"></div>
+        <div class="locker-row">
+          <div>
+            <div class="eyebrow">ACCESSORY</div>
+            <h3>Cosmetic</h3>
+          </div>
+          <div id="cosmeticGrid" class="cosmetic-grid"></div>
+        </div>
+      </main>
+    </div>
+
+    <div id="match" class="match hidden">
+      <canvas id="gameCanvas"></canvas>
+      <div class="hud">
+        <div class="hud-left">
+          <div id="modeLabel" class="hud-card">HEXAGON</div>
+          <div id="phaseLabel" class="hud-card">WAITING</div>
+        </div>
+        <div class="hud-center">
+          <div id="timer" class="timer">00:00</div>
+          <div id="objective" class="objective">Stay on the ice.</div>
+        </div>
+        <div class="hud-right">
+          <div class="hud-card"><span id="aliveCount">0</span> ALIVE</div>
+          <button id="leaveBtn" class="hud-card danger">LEAVE</button>
+        </div>
+      </div>
+      <div id="matchBanner" class="match-banner hidden"></div>
+      <div id="mobileControls" class="mobile-controls">
+        <div class="pad">
+          <button data-key="w">W</button>
+          <div><button data-key="a">A</button><button data-key="s">S</button><button data-key="d">D</button></div>
+        </div>
+        <div class="jumpPad">
+          <button data-key="space">JUMP</button>
+          <button data-key="shift">DIVE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>window.RELOADED_WS_URL = new URLSearchParams(location.search).get("server") || "";</script>
+  <script src="/app.js"></script>
 </body>
 </html>

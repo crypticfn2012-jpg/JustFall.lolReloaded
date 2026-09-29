@@ -1,10 +1,14 @@
 {
   "name": "justfall-lol-reloaded",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Community JustFall.lol preservation/reimplementation with a browser client and authoritative WebSocket server.",
   "scripts": {
     "start": "node server/index.js",
     "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "ws": "^8.18.3"

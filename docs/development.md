@@ -1,13 +1,12 @@
 # Development
 
-Requires Node.js 18+.
+Run:
 
 npm install
 npm start
 
 Open http://localhost:8080/
 
-The preserved OG client is currently stored locally at:
-C:\Users\crypt\Downloads\JustFallEmulator\just-fall
+Open multiple browser tabs to test multiple real WebSocket clients in the same playlist.
 
-Serve that directory separately while reverse-engineering the client.
+Server authoritative state is in server/index.js. Rendering and input are in web/app.js.

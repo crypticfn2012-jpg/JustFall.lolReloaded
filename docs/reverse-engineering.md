@@ -1,22 +1,25 @@
 # Reverse Engineering Notes
 
-## Confirmed
-
+Confirmed from the preserved client:
 - Product: JustFall.LOL
 - Company: JustPlay.LOL
 - Unity: 2019.4.16f1
-- WebGL build loads locally.
-- Old online client reports: GetRegions failed — AppId is unknown on the cloud server — ApplicationArchived.
+- WebGL build loads locally
+- Old networking reports an archived Photon application during GetRegions
 
-## Not yet confirmed
+Reloaded status:
+- playable browser client implemented
+- WebSocket server implemented
+- room lifecycle implemented
+- 8 slots with bots
+- four playable modes
+- server-side movement and elimination
+- unlock-all Reloaded cosmetics
 
-- Exact Photon SDK/PUN version
-- Exact AppId
-- AppVersion
-- Exact WebSocket endpoint
-- Exact Photon binary protocol revision
-- Exact room/event/property schema
+Still unknown for original-client compatibility:
+- exact Photon SDK/PUN version
+- AppId/AppVersion
+- exact binary protocol revision
+- exact original event and room-property schema
 
-These must be established from the actual preserved client and black-box network behavior before claiming compatibility.
-
-An independent Photon-compatible server implementation such as Luxon Server may be useful as a protocol reference. License and compatibility must be checked before incorporating code.
+Do not label the preserved Unity client as Photon-compatible until it has actually connected to the replacement protocol.
