@@ -10,11 +10,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm install
-      - run: node --check server/index.js
-      - run: node --check web/app.js
-      - run: test -f web/index.html
-      - run: test -f web/style.css
+
+      - name: Check public site
+        run: |
+          test -f web/index.html
+          test -f web/style.css
+          test -f web/original/index.html
+
+      - name: Check bridge package
+        working-directory: server
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Syntax check bridge
+        run: node --check photon_ws_bridge.js
+
+      - name: Check server deployment files
+        run: |
+          test -f server/bridge.Dockerfile
+          test -f server/photon/Dockerfile
+          test -f server/photon_entrypoint.sh
+          test -f render.yaml
