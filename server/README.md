@@ -31,3 +31,8 @@ Do not replace the original client with a JavaScript game and do not use the old
 10. Deploy the public web client.
 
 The exact historical JustFall Photon application/version and the client-visible operation/event set still have to be confirmed from the preserved client before calling the backend production-ready.
+
+
+## Architecture
+
+The realtime service is separate from GitHub Pages. GitHub Pages is static hosting only; the multiplayer service needs a persistent WSS endpoint.
