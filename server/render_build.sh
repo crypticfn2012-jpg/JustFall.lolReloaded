@@ -4,6 +4,12 @@ set -eu
 ROOT="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# The Render runtime uses the repository root as its working directory.
+# Install the bridge dependency before the start command runs.
+cd "$ROOT/server"
+npm install --omit=dev
+cd "$ROOT"
+
 DOTNET_VERSION="10.0.100"
 if [ ! -x "$ROOT/.dotnet/dotnet" ]; then
   mkdir -p "$ROOT/.dotnet"
