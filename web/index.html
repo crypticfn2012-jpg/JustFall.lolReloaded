@@ -1,109 +1,75 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <meta name="theme-color" content="#09100c">
-  <title>JustFall.lol Reloaded</title>
-  <link rel="stylesheet" href="/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07100a">
+<meta name="description" content="JustFall.lol Reloaded — play the original JustFall.LOL Unity WebGL client.">
+<title>JustFall.lol Reloaded</title>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div id="app">
-    <div id="menu" class="screen">
-      <header class="topbar">
-        <div>
-          <div class="brand">JustFall<span>.lol</span></div>
-          <div class="subbrand">RELOADED</div>
-        </div>
-        <div class="status-pill"><i id="statusDot"></i><span id="statusText">CONNECTING</span></div>
-      </header>
-
-      <section class="hero">
-        <div class="hero-copy">
-          <div class="eyebrow">COMMUNITY PRESERVATION</div>
-          <h1>Don't fall.</h1>
-          <p>Move, jump and outlast everyone on a floor that won't stay there forever.</p>
-          <div class="hero-actions">
-            <button id="playBtn" class="primary" onclick="location.href='/original/'">PLAY ORIGINAL</button>
-            <button id="lockerBtn" class="secondary">LOCKER</button>
-          </div>
-          <div class="tip">Original Unity WebGL client · WASD / ARROWS · SPACE · SHIFT</div>
-        </div>
-        <div class="hero-art">
-          <canvas id="previewCanvas" width="520" height="360"></canvas>
-        </div>
-      </section>
-
-      <section class="modes">
-        <div class="section-head">
-          <div>
-            <div class="eyebrow">PLAYLIST</div>
-            <h2>Choose a mode</h2>
-          </div>
-          <div class="unlocked">ALL UNLOCKED</div>
-        </div>
-        <div id="modeGrid" class="mode-grid"></div>
-      </section>
-
-      <footer>
-        <span>JustFall.lol Reloaded</span>
-        <span id="serverInfo">0 players · 0 rooms</span>
-      </footer>
+<div class="site">
+  <header class="nav">
+    <a class="logo" href="/">JustFall<span>.lol</span><b>RELOADED</b></a>
+    <div class="nav-right">
+      <span id="serverStatus" class="server"><i></i> CHECKING SERVERS</span>
+      <a href="/original/" class="nav-play">PLAY</a>
     </div>
+  </header>
 
-    <div id="locker" class="screen hidden">
-      <header class="topbar">
-        <button id="lockerBack" class="back">← BACK</button>
-        <div class="brand small">LOCKER</div>
-        <div class="unlocked">ALL UNLOCKED</div>
-      </header>
-      <main class="locker-main">
-        <div>
-          <div class="eyebrow">PENGUIN</div>
-          <h2>Pick your look</h2>
-          <p class="muted">Every colour and cosmetic is unlocked for Reloaded.</p>
+  <main>
+    <section class="hero">
+      <div class="copy">
+        <div class="eyebrow">THE ORIGINAL GAME · PRESERVED</div>
+        <h1>DON'T<br><span>FALL.</span></h1>
+        <p>JustFall.lol Reloaded brings the original Unity WebGL game back to the browser, with its original gameplay client and a replacement multiplayer network.</p>
+        <div class="actions">
+          <a class="play" href="/original/">PLAY JUSTFALL</a>
+          <a class="ghost" href="#about">ABOUT RELOADED</a>
         </div>
-        <div id="skinGrid" class="skin-grid"></div>
-        <div class="locker-row">
-          <div>
-            <div class="eyebrow">ACCESSORY</div>
-            <h3>Cosmetic</h3>
-          </div>
-          <div id="cosmeticGrid" class="cosmetic-grid"></div>
-        </div>
-      </main>
-    </div>
-
-    <div id="match" class="match hidden">
-      <canvas id="gameCanvas"></canvas>
-      <div class="hud">
-        <div class="hud-left">
-          <div id="modeLabel" class="hud-card">HEXAGON</div>
-          <div id="phaseLabel" class="hud-card">WAITING</div>
-        </div>
-        <div class="hud-center">
-          <div id="timer" class="timer">00:00</div>
-          <div id="objective" class="objective">Stay on the ice.</div>
-        </div>
-        <div class="hud-right">
-          <div class="hud-card"><span id="aliveCount">0</span> ALIVE</div>
-          <button id="leaveBtn" class="hud-card danger">LEAVE</button>
-        </div>
+        <div class="controls">WASD / ARROWS &nbsp;·&nbsp; MOUSE &nbsp;·&nbsp; SPACE &nbsp;·&nbsp; SHIFT</div>
       </div>
-      <div id="matchBanner" class="match-banner hidden"></div>
-      <div id="mobileControls" class="mobile-controls">
-        <div class="pad">
-          <button data-key="w">W</button>
-          <div><button data-key="a">A</button><button data-key="s">S</button><button data-key="d">D</button></div>
+
+      <div class="arena">
+        <div class="arena-glow"></div>
+        <div class="tile t1"></div><div class="tile t2"></div><div class="tile t3"></div>
+        <div class="tile t4"></div><div class="tile t5"></div><div class="tile t6"></div>
+        <div class="penguin">
+          <div class="eye e1"></div><div class="eye e2"></div><div class="beak"></div>
+          <div class="belly"></div>
         </div>
-        <div class="jumpPad">
-          <button data-key="space">JUMP</button>
-          <button data-key="shift">DIVE</button>
-        </div>
+        <div class="label">ORIGINAL UNITY WEBGL</div>
       </div>
-    </div>
-  </div>
-  <script>window.RELOADED_WS_URL = new URLSearchParams(location.search).get("server") || "";</script>
-  <script src="/app.js"></script>
+    </section>
+
+    <section id="about" class="about">
+      <div>
+        <div class="eyebrow">RELOADED</div>
+        <h2>The original client stays the game.</h2>
+      </div>
+      <p>The project does not recreate JustFall in JavaScript. The playable page loads the original Unity WebGL client. Reloaded provides the replacement network layer needed after the original Photon service was archived.</p>
+    </section>
+
+    <section class="features">
+      <article><strong>ORIGINAL WEBGL</strong><span>The preserved Unity client runs directly in your browser.</span></article>
+      <article><strong>MULTIPLAYER BACKEND</strong><span>Photon-compatible networking sits behind the original client.</span></article>
+      <article><strong>ALL UNLOCKED</strong><span>Reloaded accounts and persistence are prepared for cosmetics and progression.</span></article>
+    </section>
+  </main>
+
+  <footer>
+    <span>JustFall.lol Reloaded</span>
+    <span>Community preservation project</span>
+  </footer>
+</div>
+<script>
+const SERVER="https://justfall-ws.onrender.com/health";
+fetch(SERVER,{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(()=>{
+  document.querySelector("#serverStatus").innerHTML="<i class='online'></i> SERVERS ONLINE";
+}).catch(()=>{
+  document.querySelector("#serverStatus").innerHTML="<i class='offline'></i> SERVER CHECK FAILED";
+});
+</script>
 </body>
 </html>
