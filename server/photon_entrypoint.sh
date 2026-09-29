@@ -1,11 +1,17 @@
 #!/bin/sh
 set -eu
 
-HOST="${PUBLIC_HOST:-localhost}"
+HOST="${PUBLIC_HOST:-}"
+if [ -z "$HOST" ]; then
+  echo "PUBLIC_HOST is required"
+  exit 1
+fi
 
 case "$HOST" in
+  https://*) HOST="wss://${HOST#https://}" ;;
+  http://*)  HOST="ws://${HOST#http://}" ;;
   ws://*|wss://*) ;;
-  *) HOST="wss://$HOST/ws" ;;
+  *) HOST="wss://$HOST" ;;
 esac
 
 case "$HOST" in
@@ -28,4 +34,5 @@ cat > /app/config.json <<EOF
 }
 EOF
 
+echo "Advertising Photon browser endpoint: $HOST"
 exec dotnet /app/photon-server.dll
