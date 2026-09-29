@@ -8,7 +8,44 @@
 html,body,#gameContainer{margin:0;width:100%;height:100%;overflow:hidden;background:#000}
 #back{position:fixed;z-index:20;top:12px;left:12px;padding:9px 13px;border:0;border-radius:9px;background:rgba(0,0,0,.65);color:#fff;font:600 12px system-ui;cursor:pointer}
 </style>
-<script src="https://cdn.jsdelivr.net/gh/greggman/webgl-helpers@06e3d45373af0f0f0f0f0f0f/examples/unity/TemplateData/UnityProgress.js"></script>
+<script>
+/*
+ * The preserved Unity WebGL build contains the original Photon client.
+ * We do not recreate the game. We only replace the browser WebSocket
+ * transport endpoint before Unity starts, so the original Photon bytes
+ * go through the Reloaded WSS bridge.
+ */
+(function(){
+  const NativeWebSocket=window.WebSocket;
+  const params=new URLSearchParams(location.search);
+  const bridge=params.get("server") || "wss://justfall-ws.onrender.com/ws";
+
+  function rewrite(url){
+    const s=String(url);
+    if(!/^wss?:\/\//i.test(s)) return url;
+    const target=new URL(bridge);
+    const source=new URL(s);
+    target.search=source.search;
+    return target.toString();
+  }
+
+  class ReloadedWebSocket extends NativeWebSocket{
+    constructor(url,protocols){
+      const rewritten=rewrite(url);
+      if(protocols===undefined) super(rewritten);
+      else super(rewritten,protocols);
+    }
+  }
+
+  ReloadedWebSocket.CONNECTING=NativeWebSocket.CONNECTING;
+  ReloadedWebSocket.OPEN=NativeWebSocket.OPEN;
+  ReloadedWebSocket.CLOSING=NativeWebSocket.CLOSING;
+  ReloadedWebSocket.CLOSED=NativeWebSocket.CLOSED;
+  window.WebSocket=ReloadedWebSocket;
+  window.RELOADED_PHOTON_WS=bridge;
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/gh/greggman/webgl-helpers@06e3d45373af0f0f0f0f0f0f0f0f0f0f0f0f/examples/unity/TemplateData/UnityProgress.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/D3ch/hell@e1ef9902521cfadf702a3bea91ccaeb1684c0f0f/Games/just-fall/UnityLoader.js"></script>
 </head>
 <body>
