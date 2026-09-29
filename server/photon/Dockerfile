@@ -1,7 +1,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 RUN git clone --depth 1 https://github.com/Segually/photon-server.git photon-server
+COPY server/photon/patch_server.py /tmp/patch_server.py
 WORKDIR /src/photon-server
+RUN python3 /tmp/patch_server.py
 RUN sed -i 's#_publicAddress = .*#_publicAddress = config.PublicHost;#' PhotonServer.cs
 RUN dotnet publish photon-server.csproj -c Release -o /out --no-self-contained
 
