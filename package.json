@@ -2,10 +2,10 @@
   "name": "justfall-lol-reloaded",
   "private": true,
   "version": "1.0.0",
-  "description": "Community JustFall.lol preservation/reimplementation with a browser client and authoritative WebSocket server.",
+  "description": "JustFall.lol Reloaded public WebSocket bridge and original Unity WebGL client.",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node server/index.js"
+    "start": "node server/photon_ws_bridge.js",
+    "dev": "node server/photon_ws_bridge.js"
   },
   "engines": {
     "node": ">=18"
