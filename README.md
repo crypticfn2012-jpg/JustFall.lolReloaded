@@ -1,43 +1,52 @@
 # JustFall.lol Reloaded
 
-Community preservation project targeting the **original JustFall.LOL Unity WebGL client**.
+JustFall.lol Reloaded is a fan-made preservation project for the old JustFall.LOL browser game.
 
-## Original client
-The game at `/original/` is the original Unity WebGL client, not a JavaScript recreation.
+The goal is to keep the original Unity WebGL client playable and bring its online multiplayer back with a replacement Photon-compatible server.
 
-The preserved local build is:
-`C:\Users\crypt\Downloads\JustFallEmulator\just-fall`
+## Project layout
 
-The public page loads the original Unity WebGL package and intercepts its Photon WebSocket connection before Unity starts.
+- `index.html` — public GitHub Pages site
+- `web/original/` — launcher for the original Unity WebGL client
+- `web/style.css` — site styling
+- `server/` — WebSocket gateway and Photon-compatible relay
+- `supabase/` — account/profile database migrations
+- `docs/` — notes about the original client and network setup
 
-## Multiplayer backend
-The repository now contains the networking path required by the original WebGL client:
-`Original Unity WebGL → WSS bridge → Photon-compatible relay → rooms/matchmaking`
+## Local site
 
-The bridge converts browser WebSocket frames into the Photon reliable-UDP transport used by the relay. The relay provides authentication, region discovery, lobbies, room creation/joining, random matchmaking, room redirects and event/player relay.
+From the repo folder:
 
-The old JSON/fake game server has been removed.
+```text
+py -m http.server 8080
+```
 
-## Deployment
-`render.yaml` defines:
-- `justfall-ws` — public WebSocket service
-- `justfall-photon` — private Photon relay
+Then open:
 
-## Supabase
-Supabase is reserved for persistent data:
-- accounts
-- display names
-- cosmetic selections
-- unlock state
-- statistics
-- match history
+```text
+http://localhost:8080/
+```
 
-The realtime game loop remains on the networking server.
+## Multiplayer
 
-## Status
-**Original Unity client:** ready.
-**Fake JavaScript game:** removed from the server path.
-**Photon-compatible WSS path:** implemented.
-**Public multiplayer:** deploy `render.yaml`, then the original client uses the deployed WSS bridge.
+The browser client uses Photon over WebSocket/WSS. The replacement network has to speak the same binary protocol; a normal JSON WebSocket server will not work.
 
-The exact compiled JustFall client remains the final compatibility test because its Photon operations are inside the Unity WebGL build.
+The public server is intended to be:
+
+```text
+Unity WebGL client
+        ↓
+WSS gateway
+        ↓
+Photon-compatible relay
+        ↓
+rooms / matchmaking
+```
+
+## Current state
+
+The original Unity client loads in the browser.
+
+The multiplayer server code is still being brought online and tested against the real client. The site should not be treated as having working public multiplayer until that connection succeeds.
+
+This project is not affiliated with JustPlay.LOL or Exit Games.
