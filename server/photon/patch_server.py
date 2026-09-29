@@ -63,3 +63,58 @@ if "case OpCode.GetRegions:" not in s:
     s = s.replace(needle, insert, 1)
 
 server.write_text(s)
+# Add the common room-property operations used during game initialization.
+if "case OpCode.GetProperties:" not in s:
+    marker = """                case OpCode.CreateGame:  HandleCreateGame(peer, cmd, msg); break;"""
+    insert = """                case OpCode.LeaveLobby:
+                {
+                    SendReliableMessage(peer, cmd.Channel,
+                        BuildOpResp(peer, OpCode.LeaveLobby, 0, null, null));
+                    break;
+                }
+                case OpCode.GetProperties:
+                {
+                    if (peer.Room == null)
+                    {
+                        SendReliableMessage(peer, cmd.Channel,
+                            BuildOpResp(peer, OpCode.GetProperties, 32760, "Not in a room", null));
+                        break;
+                    }
+
+                    int target = msg.Parameters.TryGetValue(Param.ActorNr, out var at) && at != null
+                        ? Convert.ToInt32(at) : 0;
+
+                    var response = new Dictionary<byte, object?>();
+                    if (target == 0)
+                    {
+                        response[Param.GameProperties] = ToDict(peer.Room.Properties);
+
+                        var actorProps = new Dictionary<object, object?>();
+                        foreach (var member in peer.Room.Members.Values)
+                        {
+                            var props = new Dictionary<object, object?>();
+                            foreach (var kv in member.Properties) props[kv.Key] = kv.Value;
+                            actorProps[member.ActorNr] = props;
+                        }
+                        response[Param.PlayerProperties] = actorProps;
+                    }
+                    else if (peer.Room.Members.TryGetValue(target, out var member))
+                    {
+                        var props = new Dictionary<object, object?>();
+                        foreach (var kv in member.Properties) props[kv.Key] = kv.Value;
+                        response[Param.PlayerProperties] = new Dictionary<object, object?>
+                        {
+                            [target] = props
+                        };
+                    }
+
+                    SendReliableMessage(peer, cmd.Channel,
+                        BuildOpResp(peer, OpCode.GetProperties, 0, null, response));
+                    break;
+                }
+                case OpCode.CreateGame:  HandleCreateGame(peer, cmd, msg); break;"""
+    if marker not in s:
+        raise SystemExit("Operation switch insertion point not found")
+    s = s.replace(marker, insert, 1)
+
+server.write_text(s)
