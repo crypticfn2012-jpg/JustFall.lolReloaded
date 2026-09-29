@@ -1,163 +1,119 @@
 const http = require("http");
 const dgram = require("dgram");
-const crypto = require("crypto");
 const WebSocket = require("ws");
 
 const PORT = Number(process.env.PORT || 10000);
 const PHOTON_HOST = process.env.PHOTON_HOST || "127.0.0.1";
 const PHOTON_PORT = Number(process.env.PHOTON_PORT || 27001);
-const MTU = 1100;
+const MAX_FRAME = 8 * 1024 * 1024;
 
-function packet(challenge, commands){
-  const header = Buffer.alloc(12);
-  header.writeUInt16BE(0,0);
-  header[2]=0;
-  header[3]=commands.length & 255;
-  header.writeUInt32BE(Date.now() >>> 0,4);
-  header.writeInt32BE(challenge|0,8);
-  return Buffer.concat([header, ...commands]);
-}
-function connectCommand(){
-  const c=Buffer.alloc(12);
-  c[0]=2; c[1]=0; c[2]=1; c[3]=0;
-  c.writeInt32BE(12,4); c.writeInt32BE(0,8);
-  return c;
-}
-function ackCommand(channel, seq, timestamp){
-  const c=Buffer.alloc(20);
-  c[0]=1; c[1]=channel; c[2]=0; c[3]=0;
-  c.writeInt32BE(20,4); c.writeInt32BE(0,8);
-  c.writeInt32BE(seq|0,12); c.writeUInt32BE(timestamp >>> 0,16);
-  return c;
-}
-function reliableCommand(channel, seq, payload){
-  const c=Buffer.alloc(12 + payload.length);
-  c[0]=6; c[1]=channel; c[2]=1; c[3]=4;
-  c.writeInt32BE(c.length,4); c.writeInt32BE(seq|0,8);
-  payload.copy(c,12);
-  return c;
-}
-function fragmentCommand(channel, seq, startSeq, count, num, total, offset, payload){
-  const c=Buffer.alloc(32 + payload.length);
-  c[0]=8; c[1]=channel; c[2]=1; c[3]=4;
-  c.writeInt32BE(c.length,4); c.writeInt32BE(seq|0,8);
-  c.writeInt32BE(startSeq|0,12); c.writeInt32BE(count|0,16);
-  c.writeInt32BE(num|0,20); c.writeInt32BE(total|0,24);
-  c.writeInt32BE(offset|0,28); payload.copy(c,32);
-  return c;
-}
-function parsePacket(buf){
-  if(buf.length < 12) return null;
-  const count=buf[3], timestamp=buf.readUInt32BE(4), challenge=buf.readInt32BE(8);
-  let o=12, commands=[];
-  for(let i=0;i<count;i++){
-    if(o+12>buf.length) break;
-    const type=buf[o], channel=buf[o+1], flags=buf[o+2];
-    const size=buf.readInt32BE(o+4), seq=buf.readInt32BE(o+8);
-    if(size<12 || o+size>buf.length) break;
-    let payloadStart=o+12, extra={};
-    if(type===7){ if(o+16>buf.length) break; payloadStart=o+16; extra.unreliableSeq=buf.readInt32BE(o+12); }
-    if(type===8){
-      if(o+32>buf.length) break;
-      extra.startSeq=buf.readInt32BE(o+12);
-      extra.count=buf.readInt32BE(o+16);
-      extra.number=buf.readInt32BE(o+20);
-      extra.total=buf.readInt32BE(o+24);
-      extra.offset=buf.readInt32BE(o+28);
-      payloadStart=o+32;
-    }
-    commands.push({type,channel,flags,seq,payload:buf.subarray(payloadStart,o+size),...extra});
-    o+=size;
-  }
-  return {timestamp,challenge,commands};
+function safeSend(ws, data) {
+  if (ws.readyState === WebSocket.OPEN) ws.send(data, { binary: true });
 }
 
-const server=http.createServer((req,res)=>{
-  if(req.url==="/health"){
-    res.writeHead(200,{"content-type":"application/json"});
-    return res.end(JSON.stringify({ok:true,service:"justfall-photon-ws-bridge"}));
+const server = http.createServer((req, res) => {
+  if (req.url === "/health") {
+    res.writeHead(200, {
+      "content-type": "application/json",
+      "cache-control": "no-store"
+    });
+    return res.end(JSON.stringify({
+      ok: true,
+      service: "justfall-photon-ws-bridge",
+      photonHost: PHOTON_HOST,
+      photonPort: PHOTON_PORT
+    }));
   }
-  res.writeHead(200,{"content-type":"text/plain"});
-  res.end("JustFall.lol Reloaded Photon bridge");
+
+  res.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+  res.end("JustFall.lol Reloaded Photon WebSocket bridge");
 });
 
-const wss=new WebSocket.Server({
+const wss = new WebSocket.Server({
   server,
-  path:"/ws",
-  handleProtocols:(protocols)=>protocols.values().next().value || false
+  path: "/ws",
+  maxPayload: MAX_FRAME,
+  perMessageDeflate: false
 });
 
-wss.on("connection",(ws)=>{
-  const udp=dgram.createSocket("udp4");
-  const challenge=crypto.randomInt(-2147483648,2147483647);
-  let closed=false;
-  let nextSeq=1;
-  const fragments=new Map();
+wss.on("connection", (ws, request) => {
+  const udp = dgram.createSocket("udp4");
+  const remote = { address: PHOTON_HOST, port: PHOTON_PORT };
+  let closed = false;
+  let lastClientFrameAt = Date.now();
 
-  function sendUdp(commands){
-    if(!closed) udp.send(packet(challenge,commands),PHOTON_PORT,PHOTON_HOST);
-  }
+  console.log(
+    "[ws] connected",
+    request.socket.remoteAddress || "unknown",
+    "->",
+    PHOTON_HOST + ":" + PHOTON_PORT
+  );
 
-  udp.on("message",(buf)=>{
-    const p=parsePacket(buf);
-    if(!p || p.challenge!==challenge) return;
+  udp.on("message", (packet) => {
+    if (closed) return;
 
-    for(const c of p.commands){
-      if((c.type===6 || c.type===7 || c.type===8) && (c.flags & 1)){
-        sendUdp([ackCommand(c.channel,c.seq,p.timestamp)]);
-      }
-      if(c.type===6 || c.type===7){
-        if(c.payload.length && ws.readyState===WebSocket.OPEN) ws.send(c.payload,{binary:true});
-      } else if(c.type===8){
-        let f=fragments.get(c.startSeq);
-        if(!f){
-          f={total:c.total,count:c.count,received:0,parts:new Map()};
-          fragments.set(c.startSeq,f);
-        }
-        if(!f.parts.has(c.number)){
-          f.parts.set(c.number,{offset:c.offset,payload:c.payload});
-          f.received++;
-        }
-        if(f.received>=f.count){
-          const out=Buffer.alloc(f.total);
-          let valid=true;
-          for(const part of f.parts.values()){
-            if(part.offset<0 || part.offset+part.payload.length>f.total){ valid=false; break; }
-            part.payload.copy(out,part.offset);
-          }
-          if(valid && ws.readyState===WebSocket.OPEN) ws.send(out,{binary:true});
-          fragments.delete(c.startSeq);
-        }
-      }
-    }
+    // Photon WSS is a transport substitution: the binary WebSocket frame
+    // carries the same Photon packet bytes that the UDP transport would have
+    // carried. Do not rewrite the eNet header, challenge, peer id, sequence,
+    // reliability flags, or payload.
+    safeSend(ws, packet);
   });
 
-  udp.on("error",(e)=>{
-    if(!closed) console.error("[udp]",e.message);
-    try{ws.close();}catch{}
+  udp.on("error", (err) => {
+    console.error("[udp]", err.message);
+    try {
+      ws.close(1011, "Photon UDP relay error");
+    } catch {}
   });
 
-  udp.bind(()=>sendUdp([connectCommand()]));
+  udp.connect(remote.port, remote.address, () => {
+    console.log("[udp] connected", PHOTON_HOST + ":" + PHOTON_PORT);
+  });
 
-  ws.on("message",(data,isBinary)=>{
-    if(closed || !isBinary) return;
-    const payload=Buffer.from(data);
-    if(!payload.length) return;
-    if(payload.length<=MTU){
-      sendUdp([reliableCommand(0,nextSeq++,payload)]);
+  ws.on("message", (data, isBinary) => {
+    if (closed) return;
+
+    if (!isBinary) {
+      console.warn("[ws] ignoring non-binary frame");
       return;
     }
-    const count=Math.ceil(payload.length/MTU);
-    const start=nextSeq;
-    for(let n=0;n<count;n++){
-      const part=payload.subarray(n*MTU,Math.min(payload.length,(n+1)*MTU));
-      sendUdp([fragmentCommand(0,nextSeq++,start,count,n,payload.length,n*MTU,part)]);
-    }
+
+    const packet = Buffer.from(data);
+    if (packet.length === 0) return;
+
+    lastClientFrameAt = Date.now();
+
+    // Transparent transport proxy. Keeping the packet byte-for-byte intact is
+    // essential because the client owns the Photon connection challenge and
+    // reliability state.
+    udp.send(packet, (err) => {
+      if (err && !closed) console.error("[udp] send:", err.message);
+    });
   });
 
-  const close=()=>{closed=true;try{udp.close();}catch{}};
-  ws.on("close",close);
-  ws.on("error",close);
+  ws.on("close", (code, reason) => {
+    if (closed) return;
+    closed = true;
+    console.log(
+      "[ws] closed",
+      code,
+      reason && reason.toString ? reason.toString() : "",
+      "last frame",
+      Date.now() - lastClientFrameAt + "ms ago"
+    );
+    try { udp.close(); } catch {}
+  });
+
+  ws.on("error", (err) => {
+    if (!closed) console.error("[ws]", err.message);
+  });
 });
 
-server.listen(PORT,"0.0.0.0",()=>console.log("Photon WSS bridge listening on "+PORT+" -> UDP "+PHOTON_HOST+":"+PHOTON_PORT));
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(
+    "JustFall Photon WSS bridge listening on",
+    PORT,
+    "->",
+    PHOTON_HOST + ":" + PHOTON_PORT
+  );
+});
