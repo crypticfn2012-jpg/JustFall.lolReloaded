@@ -1,9 +1,14 @@
 #!/bin/sh
 set -eu
+HOST="${PUBLIC_HOST:-localhost}"
+case "$HOST" in
+  ws://*|wss://*) ;;
+  *) HOST="wss://$HOST" ;;
+esac
 cat > /app/config.json <<EOF
 {
   "Ports": [27001],
-  "PublicHost": "${PUBLIC_HOST:-localhost}",
+  "PublicHost": "$HOST",
   "MaxPeersPerRoom": 16,
   "MaxRooms": 1000,
   "RequireAppId": null,
