@@ -62,6 +62,26 @@ if "case OpCode.GetRegions:" not in s:
         raise SystemExit("Authenticate switch location not found")
     s = s.replace(needle, insert, 1)
 
+auth_old = """                    var resp = BuildOpResp(peer, OpCode.Authenticate, 0, null,
+                        new Dictionary<byte, object?>
+                        {
+                            [Param.Secret] = peer.SessionToken,
+                            [Param.UserId] = peer.UserId,
+                        });"""
+auth_new = """                    var resp = BuildOpResp(peer, OpCode.Authenticate, 0, null,
+                        new Dictionary<byte, object?>
+                        {
+                            [Param.Secret] = peer.SessionToken,
+                            [Param.UserId] = peer.UserId,
+                            // NameServer authentication returns the regional
+                            // Master Server address. We serve both through
+                            // the same public WebSocket endpoint.
+                            [Param.Address] = _publicAddress,
+                        });"""
+if auth_old not in s:
+    raise SystemExit("Authenticate response block not found in PhotonServer.cs")
+s = s.replace(auth_old, auth_new, 1)
+
 server.write_text(s)
 # Add the common room-property operations used during game initialization.
 if "case OpCode.GetProperties:" not in s:
