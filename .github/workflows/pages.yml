@@ -15,6 +15,12 @@ permissions:
   pages: write
   id-token: write
 
+# Queue Pages deployments instead of cancelling an older deployment whenever
+# several server/debug commits are pushed close together.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
