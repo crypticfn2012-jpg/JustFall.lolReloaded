@@ -82,6 +82,28 @@ if auth_old not in s:
     raise SystemExit("Authenticate response block not found in PhotonServer.cs")
 s = s.replace(auth_old, auth_new, 1)
 
+
+# The public network entry point is WSS on blitz.cloud. The Photon relay only
+# needs to be reachable by the local WSS bridge, so bind its UDP socket to
+# loopback first. Fall back to Any for non-sandbox/local environments.
+bind_old = """            foreach (int p in _ports)
+                _sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Any, p)));"""
+bind_new = """            foreach (int p in _ports)
+            {
+                try
+                {
+                    _sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Loopback, p)));
+                }
+                catch (Exception loopbackError)
+                {
+                    Log($"[Server] loopback bind {p} failed: {loopbackError.Message}; trying Any");
+                    _sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Any, p)));
+                }
+            }"""
+if bind_old not in s:
+    raise SystemExit("PhotonServer UDP bind block not found")
+s = s.replace(bind_old, bind_new, 1)
+
 server.write_text(s)
 # Add the common room-property operations used during game initialization.
 if "case OpCode.GetProperties:" not in s:
