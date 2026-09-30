@@ -168,3 +168,29 @@ if "case OpCode.GetProperties:" not in s:
     s = s.replace(marker, insert, 1)
 
 server.write_text(s)
+
+# Make the executable print constructor/runtime failures instead of terminating
+# silently in container hosts, and keep the process alive long enough for logs.
+program = Path("Program.cs")
+ps = program.read_text()
+old_program = """Console.WriteLine("photon-server");
+new PhotonServer.PhotonServer(config).Run();"""
+new_program = """Console.WriteLine("photon-server");
+try
+{
+    Console.WriteLine("[Bootstrap] constructing PhotonServer...");
+    var server = new PhotonServer.PhotonServer(config);
+    Console.WriteLine("[Bootstrap] PhotonServer constructed");
+    server.Run();
+    Console.WriteLine("[Bootstrap] PhotonServer.Run returned");
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine("[FATAL] photon-server crashed during startup:");
+    Console.Error.WriteLine(ex.ToString());
+    Environment.ExitCode = 1;
+}"""
+if old_program not in ps:
+    raise SystemExit("Program.cs bootstrap block not found")
+ps = ps.replace(old_program, new_program, 1)
+program.write_text(ps)
