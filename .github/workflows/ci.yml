@@ -47,3 +47,36 @@ jobs:
           test -f Dockerfile
           test -f server/blitz_start.sh
           test -f server/render_bridge.js
+          grep -q "JustFallAdsDisabled" web/original/index.html
+
+      - name: Smoke test Blitz container
+        run: |
+          set -e
+          docker run -d --name justfall-smoke \
+            -e PORT=8080 \
+            -e PHOTON_PORT=27001 \
+            -p 18080:8080 \
+            -p 27001:27001/udp \
+            justfall-blitz-test
+
+          cleanup() {
+            docker logs justfall-smoke || true
+            docker rm -f justfall-smoke || true
+          }
+          trap cleanup EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/health >/tmp/health.json; then
+              break
+            fi
+            if ! docker ps --format '{{.Names}}' | grep -q '^justfall-smoke; then
+              echo "Container exited before health endpoint became ready"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          test -s /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+          docker logs justfall-smoke 2>&1 | grep -q "WSS bridge is running"
+          docker logs justfall-smoke 2>&1 | grep -q "LISTENING on 0.0.0.0:8080"
