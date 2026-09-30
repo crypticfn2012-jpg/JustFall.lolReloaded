@@ -34,6 +34,18 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Download original Unity build assets
+        run: |
+          set -e
+          cd web/original
+          base="https://raw.githubusercontent.com/D3ch/hell/e1ef9902521cfadf702a3bea91ccaeb1684c0f0f/Games/just-fall"
+          curl -fL "$base/WebGL%20-%20RC.data.unityweb" -o "WebGL - RC.data.unityweb"
+          curl -fL "$base/WebGL%20-%20RC.wasm.code.unityweb" -o "WebGL - RC.wasm.code.unityweb"
+          curl -fL "$base/WebGL%20-%20RC.wasm.framework.unityweb" -o "WebGL - RC.wasm.framework.unityweb"
+          test -s "WebGL - RC.data.unityweb"
+          test -s "WebGL - RC.wasm.code.unityweb"
+          test -s "WebGL - RC.wasm.framework.unityweb"
+
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
