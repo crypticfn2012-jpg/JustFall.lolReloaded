@@ -10,30 +10,63 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
 </style>
 <script>
 (function(){
-  const NativeWebSocket=window.WebSocket;
-  const params=new URLSearchParams(location.search);
-  const bridge=params.get("server")||"wss://justfall-lolreloaded.justfalllol.blitz.cloud/ws";
-  class ReloadedWebSocket extends NativeWebSocket{
-    constructor(url,protocols){
-      const target=new URL(bridge);
-      const original=String(url);
-      if(/^wss?:\/\//i.test(original)){
-        try{target.search=new URL(original).search}catch(e){}
-      }
-      super(target.toString(),protocols);
+  const NativeWebSocket = window.WebSocket;
+  const params = new URLSearchParams(window.location.search);
+  const bridge = params.get("server") || "wss://justfall-lolreloaded.justfalllol.blitz.cloud/ws";
+
+  function rewriteUrl(url){
+    const original = String(url);
+    if(!/^wss?:\/\//i.test(original)) return original;
+
+    try{
+      const source = new URL(original);
+      const target = new URL(bridge);
+
+      // Keep Photon query parameters (app, clientversion, sid, etc.) but
+      // force the connection itself to our replacement WSS endpoint.
+      target.search = source.search;
+      return target.toString();
+    }catch(e){
+      console.error("[JustFall Reloaded] WebSocket URL rewrite failed", e);
+      return bridge;
     }
   }
-  window.WebSocket=ReloadedWebSocket;
-  window.RELOADED_PHOTON_WS=bridge;
+
+  // Proxy the native constructor instead of subclassing it. Unity's WebGL
+  // networking code expects the exact browser WebSocket constructor semantics.
+  const ReloadedWebSocket = new Proxy(NativeWebSocket, {
+    construct(target, args){
+      const originalUrl = args[0];
+      const rewrittenUrl = rewriteUrl(originalUrl);
+      const nextArgs = [rewrittenUrl].concat(args.slice(1));
+
+      console.log(
+        "[JustFall Reloaded] WS ROUTE:",
+        String(originalUrl),
+        "=>",
+        rewrittenUrl
+      );
+
+      return Reflect.construct(target, nextArgs, target);
+    }
+  });
+
+  window.WebSocket = ReloadedWebSocket;
+  window.globalThis.WebSocket = ReloadedWebSocket;
+  window.RELOADED_PHOTON_WS = bridge;
 
   window.JustFallReloaded = {
     bridge: bridge,
     socketCount: 0,
     sockets: [],
     log: function(type, data){
-      var entry = {time:new Date().toISOString(),type:type,data:data||null};
+      var entry = {
+        time:new Date().toISOString(),
+        type:type,
+        data:data==null?null:data
+      };
       this.debugLog.push(entry);
-      console.log("[JustFall Reloaded]", type, data||"");
+      console.log("[JustFall Reloaded]", type, data==null?"":data);
       this.renderDebug();
     },
     debugLog: [],
@@ -41,13 +74,18 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
       var box=document.getElementById("connection-debug");
       if(!box) return;
       var rows=this.debugLog.slice(-12).map(function(x){
-        return "<div><b>"+x.type+"</b> "+String(x.data==null?"":x.data).replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</div>";
+        return "<div><b>"+x.type+"</b> "+String(x.data==null?"":x.data)
+          .replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</div>";
       }).join("");
       box.innerHTML=rows;
     },
     send: function(objectName, methodName, value){
       if(window.gameInstance && typeof window.gameInstance.SendMessage==="function"){
-        window.gameInstance.SendMessage(objectName, methodName, value == null ? "" : String(value));
+        window.gameInstance.SendMessage(
+          objectName,
+          methodName,
+          value == null ? "" : String(value)
+        );
         this.log("unity.send", objectName+"."+methodName);
         return true;
       }
@@ -56,38 +94,10 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
     }
   };
 
-  var OriginalWS = ReloadedWebSocket;
-  window.WebSocket = function(url, protocols){
-    var ws = new OriginalWS(url, protocols);
-    window.JustFallReloaded.socketCount++;
-    window.JustFallReloaded.sockets.push(ws);
-    var id=window.JustFallReloaded.socketCount;
-    window.JustFallReloaded.log("ws.create", "#"+id+" requested="+String(url)+" target="+String(ws.url));
-    ws.addEventListener("open",function(){
-      window.JustFallReloaded.log("ws.open","#"+id);
-    });
-    ws.addEventListener("message",function(e){
-      var size = e.data && e.data.byteLength != null ? e.data.byteLength : (typeof e.data==="string" ? e.data.length : 0);
-      window.JustFallReloaded.log("ws.message","#"+id+" "+size+" bytes");
-    });
-    ws.addEventListener("error",function(){
-      window.JustFallReloaded.log("ws.error","#"+id);
-    });
-    ws.addEventListener("close",function(e){
-      window.JustFallReloaded.log("ws.close","#"+id+" code="+e.code+" reason="+(e.reason||""));
-    });
-    return ws;
-  };
-  window.WebSocket.prototype = OriginalWS.prototype;
-
-  // Preserve the native WebSocket constants used by Unity's WebGL networking code.
-  window.WebSocket.CONNECTING = OriginalWS.CONNECTING;
-  window.WebSocket.OPEN = OriginalWS.OPEN;
-  window.WebSocket.CLOSING = OriginalWS.CLOSING;
-  window.WebSocket.CLOSED = OriginalWS.CLOSED;
+  window.JustFallReloaded.log("ws.hook",
+    "active; bridge="+bridge+" native="+(typeof NativeWebSocket));
 })();
-
-</script>
+</script>>
 <script>
 window.showAds = window.showAds || function(){};
 window.hideAds = window.hideAds || function(){};
