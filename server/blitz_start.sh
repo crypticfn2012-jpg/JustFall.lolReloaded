@@ -23,14 +23,11 @@ EOF
 echo "JustFall Photon starting"
 echo "Public WSS endpoint: $PUBLIC_HOST"
 
-python3 /app/health.py &
-HEALTH_PID=$!
-
 dotnet /app/photon/photon-server.dll &
 PHOTON_PID=$!
 
 cleanup() {
-  kill "$PHOTON_PID" "$HEALTH_PID" 2>/dev/null || true
+  kill "$PHOTON_PID" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
