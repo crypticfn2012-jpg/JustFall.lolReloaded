@@ -23,21 +23,23 @@ jobs:
 
       - name: Syntax check bridge
         working-directory: server
-        run: node --check photon_ws_bridge.js
+        run: node --check render_bridge.js
 
       - name: Test Photon WSS transport
         run: node server/test_bridge.js
 
       - name: Check deployment files
         run: |
-          test -f server/bridge.Dockerfile
-          test -f server/photon/Dockerfile
-          test -f server/photon_entrypoint.sh
+          test -f Dockerfile
+          test -f server/blitz_start.sh
+          test -f server/render_bridge.js
           test -f server/photon/patch_server.py
-          test -f render.yaml
 
-      - name: Build WSS bridge image
-        run: docker build -f server/bridge.Dockerfile -t justfall-ws-test .
+      - name: Build Blitz image
+        run: docker build -t justfall-blitz-test .
 
-      - name: Build Photon relay image
-        run: docker build -f server/photon/Dockerfile -t justfall-photon-test .
+      - name: Check root deployment files
+        run: |
+          test -f Dockerfile
+          test -f server/blitz_start.sh
+          test -f server/render_bridge.js
