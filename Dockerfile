@@ -21,8 +21,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /out/ /app/photon/
-COPY server/package.json /app/server/package.json
-RUN cd /app/server && npm install --omit=dev
+COPY server/package.json /app/package.json
+RUN npm install --omit=dev
 
 COPY server/blitz_start.sh /app/blitz_start.sh
 COPY server/render_bridge.js /app/render_bridge.js
