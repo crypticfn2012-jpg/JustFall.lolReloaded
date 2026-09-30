@@ -17,7 +17,7 @@
   "cacheControl": {
     "default": "must-revalidate"
   },
-  "developmentBuild": true,
+  "developmentBuild": false,
   "multithreading": false,
   "unityVersion": "2019.4.16f1"
 }
