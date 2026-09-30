@@ -27,8 +27,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
       target.search = source.search;
       return target.toString();
     }catch(e){
-      console.error("[JustFall Reloaded] WebSocket URL rewrite failed", e);
-      return bridge;
+            return bridge;
     }
   }
 
@@ -40,13 +39,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
       const rewrittenUrl = rewriteUrl(originalUrl);
       const nextArgs = [rewrittenUrl].concat(args.slice(1));
 
-      console.log(
-        "[JustFall Reloaded] WS ROUTE:",
-        String(originalUrl),
-        "=>",
-        rewrittenUrl
-      );
-
+      
       return Reflect.construct(target, nextArgs, target);
     }
   });
@@ -54,48 +47,17 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
   window.WebSocket = ReloadedWebSocket;
   window.globalThis.WebSocket = ReloadedWebSocket;
   window.RELOADED_PHOTON_WS = bridge;
-
   window.JustFallReloaded = {
     bridge: bridge,
-    socketCount: 0,
-    sockets: [],
-    log: function(type, data){
-      var entry = {
-        time:new Date().toISOString(),
-        type:type,
-        data:data==null?null:data
-      };
-      this.debugLog.push(entry);
-      console.log("[JustFall Reloaded]", type, data==null?"":data);
-      this.renderDebug();
-    },
-    debugLog: [],
-    renderDebug: function(){
-      var box=document.getElementById("connection-debug");
-      if(!box) return;
-      var rows=this.debugLog.slice(-12).map(function(x){
-        return "<div><b>"+x.type+"</b> "+String(x.data==null?"":x.data)
-          .replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</div>";
-      }).join("");
-      box.innerHTML=rows;
-    },
+    log: function(){},
     send: function(objectName, methodName, value){
       if(window.gameInstance && typeof window.gameInstance.SendMessage==="function"){
-        window.gameInstance.SendMessage(
-          objectName,
-          methodName,
-          value == null ? "" : String(value)
-        );
-        this.log("unity.send", objectName+"."+methodName);
+        window.gameInstance.SendMessage(objectName, methodName, value == null ? "" : String(value));
         return true;
       }
-      this.log("unity.error","Unity instance is not ready");
       return false;
     }
   };
-
-  window.JustFallReloaded.log("ws.hook",
-    "active; bridge="+bridge+" native="+(typeof NativeWebSocket));
 })();
 </script>
 <script>
@@ -107,7 +69,6 @@ window.hideAds = window.hideAds || function(){};
 <body>
 <div id="gameContainer"></div>
 <div id="loading"><div class="loading-box"><div class="loading-title">JUSTFALL<span>.LOL</span></div><div class="loading-sub">LOADING ORIGINAL GAME</div><div class="bar"><i></i></div></div></div>
-<div id="connection-debug" style="position:fixed;right:10px;bottom:10px;z-index:50;max-width:520px;max-height:190px;overflow:auto;padding:9px 11px;background:rgba(0,0,0,.82);color:#b9d8ff;border:1px solid rgba(255,255,255,.14);font:11px/1.5 monospace;pointer-events:none"></div>
 <a id="back" href="https://crypticfn2012-jpg.github.io/JustFall.lolReloaded">← SITE</a>
 <script>
 const ORIGINAL="./WebGL.json";
@@ -122,7 +83,6 @@ window.gameInstance=UnityLoader.instantiate("gameContainer",ORIGINAL,{
     }
   }
 });
-window.JustFallReloaded.log("loader","UnityLoader.instantiate called");
 </script>
 </body>
 </html>
