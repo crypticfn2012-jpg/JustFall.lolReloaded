@@ -103,6 +103,15 @@ if bind_old not in s:
     raise SystemExit("PhotonServer UDP bind block not found")
 s = s.replace(bind_old, bind_new, 1)
 
+# Containerized Blitz has no interactive stdin. Disable the optional console
+# reader so the Photon process is not terminated when stdin closes.
+console_old = """            StartConsoleThread();"""
+console_new = """            // StartConsoleThread();"""
+if console_old not in s:
+    raise SystemExit("StartConsoleThread call not found in PhotonServer.cs")
+s = s.replace(console_old, console_new, 1)
+
+server.write_text(s)
 server.write_text(s)
 # Add the common room-property operations used during game initialization.
 if "case OpCode.GetProperties:" not in s:
