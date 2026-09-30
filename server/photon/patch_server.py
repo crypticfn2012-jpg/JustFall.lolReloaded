@@ -26,16 +26,17 @@ s = server.read_text()
 # as a Photon redirect address; do not append a UDP port.
 old = """            // The game-server port the client redirects to is fixed by the SDK's
             // ServerPortOverrides (UDP GameServer = 27002), so advertise that.
+            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];
+            _publicAddress = $"{config.PublicHost}:{gamePort}";
+"""
+new = """            // Browser clients stay on the public WSS bridge for every Photon
+            // connection. Do not append the private UDP relay port.
             _publicAddress = config.PublicHost;
 """
-new = """            // For the browser build, the region/game-server redirect must stay
-            // on the public WSS bridge. The bridge then forwards Photon packets
-            // to this private UDP relay. PublicHost is therefore a complete URL.
-            _publicAddress = config.PublicHost;
-"""
-if old not in s:
+if old in s:
+    s = s.replace(old, new, 1)
+elif "_publicAddress = config.PublicHost;" not in s:
     raise SystemExit("PhotonServer public-address block not found")
-s = s.replace(old, new, 1)
 
 # Add GetRegions directly before Authenticate in the operation switch.
 needle = """                case OpCode.Authenticate:
