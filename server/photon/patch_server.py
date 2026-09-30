@@ -1,70 +1,54 @@
 from pathlib import Path
-import re
 
-ROOT = Path(".")
+protocol_path = Path("Protocol.cs")
+protocol = protocol_path.read_text()
 
-def read(name):
-    p = ROOT / name
-    return p, p.read_text()
-
-def require_once_replace(text, pattern, replacement, name):
-    out, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE | re.DOTALL)
-    if count == 0:
-        raise SystemExit(f"Could not patch {name}")
-    return out
-
-# ---------------------------------------------------------------------------
-# Protocol.cs
-# ---------------------------------------------------------------------------
-protocol_path, protocol = read("Protocol.cs")
-
+# Add NameServer GetRegions support.
 if "public const byte GetRegions" not in protocol:
-    protocol, count = re.subn(
-        r"(public const byte Authenticates*=s*230;s*)",
-        r"\1        public const byte GetRegions    = 220;
-",
-        protocol,
-        count=1,
+    needle = "public const byte Authenticate   = 230;"
+    if needle not in protocol:
+        raise SystemExit("Protocol.cs Authenticate opcode not found")
+    protocol = protocol.replace(
+        needle,
+        needle + "\n        public const byte GetRegions    = 220;",
+        1
     )
-    if count != 1:
-        raise SystemExit("Could not add GetRegions opcode")
 
-if "public const byte Region" not in protocol:
-    protocol, count = re.subn(
-        r"(public const byte UserIds*=s*225;s*)",
-        r"\1        public const byte Region          = 210;
-",
-        protocol,
-        count=1,
+# Add the Region parameter used by GetRegions.
+if "public const byte Region          = 210;" not in protocol:
+    needle = "public const byte UserId           = 225;"
+    if needle not in protocol:
+        raise SystemExit("Protocol.cs UserId parameter not found")
+    protocol = protocol.replace(
+        needle,
+        needle + "\n        public const byte Region          = 210;",
+        1
     )
-    if count != 1:
-        raise SystemExit("Could not add Region parameter")
 
 protocol_path.write_text(protocol)
 
-# ---------------------------------------------------------------------------
-# PhotonServer.cs
-# ---------------------------------------------------------------------------
-server_path, server = read("PhotonServer.cs")
+server_path = Path("PhotonServer.cs")
+server = server_path.read_text()
 
-# Browser clients must reconnect through the same WSS bridge after master
-# redirects. Never advertise the private UDP port.
-server, count = re.subn(
-    r'// The game-server port the client redirects to.*?'
-    r'_publicAddresss*=s*$"\{config.PublicHost\}:\{gamePort\}";',
-    '// Browser clients use the public WSS bridge for every connection.\n'
-    '            _publicAddress = config.PublicHost;',
-    server,
-    count=1,
-    flags=re.MULTILINE | re.DOTALL,
-)
-if count != 1 and "_publicAddress = config.PublicHost;" not in server:
-    raise SystemExit("Could not patch public Photon address")
+# Browser clients must stay on the public WSS endpoint after master/game redirects.
+old_public = """            // The game-server port the client redirects to is fixed by the SDK's
+            // ServerPortOverrides (UDP GameServer = 27002), so advertise that.
+            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];
+            _publicAddress = $"{config.PublicHost}:{gamePort}";
+"""
+new_public = """            // Browser clients use the public WSS bridge for every Photon connection.
+            _publicAddress = config.PublicHost;
+"""
+if "_publicAddress = config.PublicHost;" not in server:
+    if old_public not in server:
+        raise SystemExit("PhotonServer public-address block not found")
+    server = server.replace(old_public, new_public, 1)
 
-# Add a proper Name Server GetRegions response. The Unity Photon client expects
-# region and address arrays of equal length.
+# Proper GetRegions response: both arrays must have the same length.
 if "case OpCode.GetRegions:" not in server:
-    marker = "                case OpCode.Authenticate:\n                {"
+    needle = """                case OpCode.Authenticate:
+                {
+"""
     insert = """                case OpCode.GetRegions:
                 {
                     var resp = BuildOpResp(peer, OpCode.GetRegions, 0, null,
@@ -78,45 +62,42 @@ if "case OpCode.GetRegions:" not in server:
                     break;
                 }
                 case OpCode.Authenticate:
-                {"""
-    if marker not in server:
-        raise SystemExit("Could not find Authenticate switch")
-    server = server.replace(marker, insert, 1)
+                {
+"""
+    if needle not in server:
+        raise SystemExit("Authenticate switch not found")
+    server = server.replace(needle, insert, 1)
 
-# Name Server auth must return Address as well as Secret/UserId.
-if "[Param.Address] = _publicAddress" not in server:
-    auth_pattern = (
-        r"(var resp = BuildOpResp\(peer, OpCode\.Authenticate, 0, null,\s*"
-        r"new Dictionary<byte, object\?>\s*\{\s*"
-        r"\[Param\.Secret\] = peer\.SessionToken,\s*"
-        r"\[Param\.UserId\] = peer\.UserId,\s*"
-        r"\}\);)"
-    )
-    replacement = """var resp = BuildOpResp(peer, OpCode.Authenticate, 0, null,
+# NameServer Authenticate response needs to return the MasterServer address.
+if "[Param.Address] = _publicAddress," not in server:
+    old_auth = """                    var resp = BuildOpResp(peer, OpCode.Authenticate, 0, null,
+                        new Dictionary<byte, object?>
+                        {
+                            [Param.Secret] = peer.SessionToken,
+                            [Param.UserId] = peer.UserId,
+                        });"""
+    new_auth = """                    var resp = BuildOpResp(peer, OpCode.Authenticate, 0, null,
                         new Dictionary<byte, object?>
                         {
                             [Param.Secret] = peer.SessionToken,
                             [Param.UserId] = peer.UserId,
                             [Param.Address] = _publicAddress,
                         });"""
-    server, count = re.subn(auth_pattern, replacement, server, count=1)
-    if count != 1:
-        raise SystemExit("Could not patch Authenticate response")
+    if old_auth not in server:
+        raise SystemExit("Authenticate response block not found")
+    server = server.replace(old_auth, new_auth, 1)
 
-# Keep the container non-interactive. The upstream server starts a console
-# reader which has no useful purpose in a hosted WebSocket service.
-server, count = re.subn(
-    r"^s*StartConsoleThread();s*$",
-    "            // No interactive console in hosted/container mode.",
-    server,
-    count=1,
-)
-if count != 1 and "No interactive console in hosted/container mode." not in server:
-    raise SystemExit("Could not disable console thread")
+# Hosted containers have no interactive Photon console input.
+if "StartConsoleThread();" in server:
+    server = server.replace(
+        "            StartConsoleThread();",
+        "            // Interactive console disabled in hosted/container mode.",
+        1
+    )
 
-# Add room/property operations only once.
-if "case OpCode.LeaveLobby:" not in server:
-    marker = "                case OpCode.CreateGame:  HandleCreateGame(peer, cmd, msg); break;"
+# Add operations needed by the original client during room setup.
+if "case OpCode.GetProperties:" not in server:
+    needle = "                case OpCode.CreateGame:  HandleCreateGame(peer, cmd, msg); break;"
     insert = """                case OpCode.LeaveLobby:
                 {
                     SendReliableMessage(peer, cmd.Channel,
@@ -168,26 +149,25 @@ if "case OpCode.LeaveLobby:" not in server:
                     break;
                 }
                 case OpCode.CreateGame:  HandleCreateGame(peer, cmd, msg); break;"""
-    if marker not in server:
-        raise SystemExit("Could not find CreateGame switch")
-    server = server.replace(marker, insert, 1)
+    if needle not in server:
+        raise SystemExit("CreateGame switch not found")
+    server = server.replace(needle, insert, 1)
 
 server_path.write_text(server)
 
-# ---------------------------------------------------------------------------
-# Program.cs — print startup exceptions rather than dying with only the banner
-# ---------------------------------------------------------------------------
-program_path, program = read("Program.cs")
+# Print runtime exceptions instead of dying without a useful stack trace.
+program_path = Path("Program.cs")
+program = program_path.read_text()
 if "[FATAL] photon-server crashed during startup:" not in program:
-    pattern = r'Console.WriteLine("photon-server");s*new PhotonServer.PhotonServer(config).Run();'
-    replacement = """Console.WriteLine("photon-server");
+    old_program = """Console.WriteLine("photon-server");
+new PhotonServer.PhotonServer(config).Run();"""
+    new_program = """Console.WriteLine("photon-server");
 try
 {
     Console.WriteLine("[Bootstrap] constructing PhotonServer...");
     var server = new PhotonServer.PhotonServer(config);
     Console.WriteLine("[Bootstrap] PhotonServer constructed");
     server.Run();
-    Console.WriteLine("[Bootstrap] PhotonServer.Run returned");
 }
 catch (Exception ex)
 {
@@ -195,10 +175,9 @@ catch (Exception ex)
     Console.Error.WriteLine(ex.ToString());
     Environment.ExitCode = 1;
 }"""
-    program, count = re.subn(pattern, replacement, program, count=1, flags=re.MULTILINE | re.DOTALL)
-    if count != 1:
-        raise SystemExit("Could not patch Program.cs startup")
-
-program_path.write_text(program)
+    if old_program not in program:
+        raise SystemExit("Program.cs bootstrap block not found")
+    program = program.replace(old_program, new_program, 1)
+    program_path.write_text(program)
 
 print("Photon patch completed successfully.")
