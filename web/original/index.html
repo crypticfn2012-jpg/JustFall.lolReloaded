@@ -25,22 +25,79 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
   }
   window.WebSocket=ReloadedWebSocket;
   window.RELOADED_PHOTON_WS=bridge;
+
+  window.JustFallReloaded = {
+    bridge: bridge,
+    socketCount: 0,
+    sockets: [],
+    log: function(type, data){
+      var entry = {time:new Date().toISOString(),type:type,data:data||null};
+      this.debugLog.push(entry);
+      console.log("[JustFall Reloaded]", type, data||"");
+      this.renderDebug();
+    },
+    debugLog: [],
+    renderDebug: function(){
+      var box=document.getElementById("connection-debug");
+      if(!box) return;
+      var rows=this.debugLog.slice(-12).map(function(x){
+        return "<div><b>"+x.type+"</b> "+String(x.data==null?"":x.data).replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</div>";
+      }).join("");
+      box.innerHTML=rows;
+    },
+    send: function(objectName, methodName, value){
+      if(window.gameInstance && typeof window.gameInstance.SendMessage==="function"){
+        window.gameInstance.SendMessage(objectName, methodName, value == null ? "" : String(value));
+        this.log("unity.send", objectName+"."+methodName);
+        return true;
+      }
+      this.log("unity.error","Unity instance is not ready");
+      return false;
+    }
+  };
+
+  var OriginalWS = ReloadedWebSocket;
+  window.WebSocket = function(url, protocols){
+    var ws = new OriginalWS(url, protocols);
+    window.JustFallReloaded.socketCount++;
+    window.JustFallReloaded.sockets.push(ws);
+    var id=window.JustFallReloaded.socketCount;
+    window.JustFallReloaded.log("ws.create", "#"+id+" "+String(url));
+    ws.addEventListener("open",function(){
+      window.JustFallReloaded.log("ws.open","#"+id);
+    });
+    ws.addEventListener("message",function(e){
+      var size = e.data && e.data.byteLength != null ? e.data.byteLength : (typeof e.data==="string" ? e.data.length : 0);
+      window.JustFallReloaded.log("ws.message","#"+id+" "+size+" bytes");
+    });
+    ws.addEventListener("error",function(){
+      window.JustFallReloaded.log("ws.error","#"+id);
+    });
+    ws.addEventListener("close",function(e){
+      window.JustFallReloaded.log("ws.close","#"+id+" code="+e.code+" reason="+(e.reason||""));
+    });
+    return ws;
+  };
+  window.WebSocket.prototype = OriginalWS.prototype;
 })();
 </script>
 <script>
 window.showAds = window.showAds || function(){};
 window.hideAds = window.hideAds || function(){};
 </script>
-<script src="https://cdn.jsdelivr.net/gh/D3ch/hell@e1ef9902521cfadf702a3bea91ccaeb1684c0f0f/Games/just-fall/UnityLoader.js"></script>
+<script src="./UnityLoader.js"></script>
 </head>
 <body>
 <div id="gameContainer"></div>
 <div id="loading"><div class="loading-box"><div class="loading-title">JUSTFALL<span>.LOL</span></div><div class="loading-sub">LOADING ORIGINAL GAME</div><div class="bar"><i></i></div></div></div>
+<div id="connection-debug" style="position:fixed;right:10px;bottom:10px;z-index:50;max-width:520px;max-height:190px;overflow:auto;padding:9px 11px;background:rgba(0,0,0,.82);color:#b9d8ff;border:1px solid rgba(255,255,255,.14);font:11px/1.5 monospace;pointer-events:none"></div>
 <a id="back" href="https://crypticfn2012-jpg.github.io/JustFall.lolReloaded">← SITE</a>
 <script>
-const ORIGINAL="https://raw.githubusercontent.com/crypticfn2012-jpg/JustFall.lolReloaded/main/web/original/WebGL.json";
-UnityLoader.instantiate("gameContainer",ORIGINAL,{
+const ORIGINAL="./WebGL.json";
+window.JustFallReloaded.log("loader","Using "+ORIGINAL);
+window.gameInstance=UnityLoader.instantiate("gameContainer",ORIGINAL,{
   onProgress:function(_,progress){
+    window.JustFallReloaded.log("unity.progress",Math.round(progress*100)+"%");
     if(progress>=1){
       const el=document.getElementById("loading");
       el.style.opacity="0";
@@ -48,6 +105,7 @@ UnityLoader.instantiate("gameContainer",ORIGINAL,{
     }
   }
 });
+window.JustFallReloaded.log("loader","UnityLoader.instantiate called");
 </script>
 </body>
 </html>
