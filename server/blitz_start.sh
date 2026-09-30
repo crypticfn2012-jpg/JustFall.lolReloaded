@@ -20,7 +20,9 @@ cat > /app/config.json <<EOF
 }
 EOF
 
+BUILD_ID="16f2620-stable"
 echo "JustFall Photon starting"
+echo "Build ID: $BUILD_ID"
 echo "Public WSS endpoint: ${PUBLIC_HOST}"
 echo "HTTP/WSS PORT: ${PORT}"
 echo "Photon UDP PORT: ${PHOTON_PORT}"
