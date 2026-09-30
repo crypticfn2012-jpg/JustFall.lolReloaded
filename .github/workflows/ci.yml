@@ -83,3 +83,6 @@ jobs:
           test "$(docker inspect -f '{{.State.Running}}' justfall-smoke)" = "true"
           curl -fsS http://127.0.0.1:18080/health >/tmp/health-after-start.json
           grep -q '"ok":true' /tmp/health-after-start.json
+          docker logs justfall-smoke 2>&1 | grep -q "Photon process is running"
+          docker logs justfall-smoke 2>&1 | grep -q "\[Bootstrap\] PhotonServer constructed"
+          docker logs justfall-smoke 2>&1 | grep -q "\[Server\] Photon UDP server listening"
