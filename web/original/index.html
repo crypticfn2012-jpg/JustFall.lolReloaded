@@ -64,7 +64,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
 window.showAds = window.showAds || function(){};
 window.hideAds = window.hideAds || function(){};
 </script>
-<script src="./UnityLoader.js"></script>
+<script src="./UnityLoader.js?v=2019.4.16f1"></script>
 </head>
 <body>
 <div id="gameContainer"></div>
@@ -72,7 +72,6 @@ window.hideAds = window.hideAds || function(){};
 <a id="back" href="https://crypticfn2012-jpg.github.io/JustFall.lolReloaded">← SITE</a>
 <script>
 const ORIGINAL="./WebGL.json";
-window.JustFallReloaded.log("loader","UnityLoader="+(typeof UnityLoader)+"; Using "+new URL(ORIGINAL,location.href).href);
 window.gameInstance=UnityLoader.instantiate("gameContainer",ORIGINAL,{
   onProgress:function(_,progress){
     window.JustFallReloaded.log("unity.progress",Math.round(progress*100)+"%");
