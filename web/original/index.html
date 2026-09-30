@@ -11,7 +11,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
 (function(){
   const NativeWebSocket=window.WebSocket;
   const params=new URLSearchParams(location.search);
-  const bridge=params.get("server")||"wss://justfall-ws.onrender.com/ws";
+  const bridge=params.get("server")||"wss://justfall-lolreloaded.justfalllol.blitz.cloud/ws";
   class ReloadedWebSocket extends NativeWebSocket{
     constructor(url,protocols){
       const target=new URL(bridge);
