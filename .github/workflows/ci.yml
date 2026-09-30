@@ -84,5 +84,6 @@ jobs:
           curl -fsS http://127.0.0.1:18080/health >/tmp/health-after-start.json
           grep -q '"ok":true' /tmp/health-after-start.json
           docker logs justfall-smoke 2>&1 | grep -q "Photon process is running"
-          docker logs justfall-smoke 2>&1 | grep -q "\[Bootstrap\] PhotonServer constructed"
-          docker logs justfall-smoke 2>&1 | grep -q "\[Server\] Photon UDP server listening"
+          docker logs justfall-smoke 2>&1 | grep -q "\[Bridge\] LISTENING on 0.0.0.0:8080"
+          echo "Blitz container smoke test passed"
+          docker logs justfall-smoke
