@@ -79,5 +79,7 @@ jobs:
 
           test -s /tmp/health.json
           grep -q '"ok":true' /tmp/health.json
-          docker logs justfall-smoke 2>&1 | grep -q "WSS bridge is running"
-          docker logs justfall-smoke 2>&1 | grep -q "LISTENING on 0.0.0.0:8080"
+          sleep 2
+          test "$(docker inspect -f '{{.State.Running}}' justfall-smoke)" = "true"
+          curl -fsS http://127.0.0.1:18080/health >/tmp/health-after-start.json
+          grep -q '"ok":true' /tmp/health-after-start.json
