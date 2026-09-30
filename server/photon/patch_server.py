@@ -104,7 +104,15 @@ if bind_old not in s:
     raise SystemExit("PhotonServer UDP bind block not found")
 s = s.replace(bind_old, bind_new, 1)
 
-addr_old = """            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];\n            _publicAddress = $"{config.PublicHost}:{gamePort}";"""\naddr_new = """            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];\n            _publicAddress = config.PublicHost.Contains(\"://\", StringComparison.Ordinal)\n                ? config.PublicHost\n                : $"{config.PublicHost}:{gamePort}";"""\nif addr_old not in s:\n    raise SystemExit("PhotonServer public address block not found")\ns = s.replace(addr_old, addr_new, 1)
+addr_old = """            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];
+            _publicAddress = $"{config.PublicHost}:{gamePort}";"""
+addr_new = """            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];
+            _publicAddress = config.PublicHost.Contains("://", StringComparison.Ordinal)
+                ? config.PublicHost
+                : $"{config.PublicHost}:{gamePort}";"""
+if addr_old not in s:
+    raise SystemExit("PhotonServer public address block not found")
+s = s.replace(addr_old, addr_new, 1)
 
 server.write_text(s)
 # Add the common room-property operations used during game initialization.
