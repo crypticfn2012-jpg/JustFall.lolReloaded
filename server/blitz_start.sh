@@ -33,13 +33,15 @@ node -e "require('ws'); console.log('ws module: OK')" 2>&1 || {
 }
 
 echo "Starting Photon server..."
-dotnet /app/photon/photon-server.dll 2>&1 | tee /app/photon.log &
-PHOTON_PIPE_PID=$!
-PHOTON_PID=$PHOTON_PIPE_PID
+dotnet /app/photon/photon-server.dll > /app/photon.log 2>&1 &
+PHOTON_PID=$!
+tail -F /app/photon.log &
+LOG_PID=$!
 
 cleanup() {
   echo "Shutting down..."
   kill "$PHOTON_PID" 2>/dev/null || true
+  kill "${LOG_PID:-}" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
