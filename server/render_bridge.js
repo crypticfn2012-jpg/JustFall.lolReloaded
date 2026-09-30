@@ -1,7 +1,9 @@
 const http = require("http");
 const dgram = require("dgram");
 const crypto = require("crypto");
-const { WebSocketServer, OPEN } = require("ws");
+const WS = require("ws");
+const WebSocketServer = WS.WebSocketServer;
+const OPEN = WS.OPEN;
 
 const PORT = Number(process.env.PORT || 8080);
 const PHOTON_HOST = process.env.PHOTON_HOST || "127.0.0.1";
@@ -98,6 +100,28 @@ function buildUdpReliable(payload, channel, sequence, timestamp, challenge) {
   return packet;
 }
 
+function buildUdpUnreliable(payload, channel, sequence, timestamp, challenge) {
+  const command = Buffer.alloc(16 + payload.length);
+
+  command.writeUInt8(7, 0);
+  command.writeUInt8(channel & 255, 1);
+  command.writeUInt8(0, 2);
+  command.writeUInt8(4, 3);
+  command.writeUInt32BE(command.length, 4);
+  command.writeInt32BE(sequence, 8);
+  command.writeInt32BE(sequence, 12);
+  payload.copy(command, 16);
+
+  const packet = Buffer.alloc(12 + command.length);
+  packet.writeUInt16BE(0, 0);
+  packet.writeUInt8(0, 2);
+  packet.writeUInt8(1, 3);
+  packet.writeUInt32BE(timestamp >>> 0, 4);
+  packet.writeInt32BE(challenge, 8);
+  command.copy(packet, 12);
+  return packet;
+}
+
 function buildUdpAck(channel, ackedSeq, timestamp, challenge) {
   const command = Buffer.alloc(20);
 
@@ -140,21 +164,21 @@ function buildUdpDisconnect(channel, sequence, timestamp, challenge) {
   return packet;
 }
 
-function buildTPeerFrame(payload) {
-  // Photon TPeer: FB + 4-byte big-endian total frame length + 2 framing bytes + payload.
+function buildTPeerFrame(payload, channel = 0, reliable = true) {
   const frame = Buffer.alloc(7 + payload.length);
   frame.writeUInt8(TPeerMagic, 0);
   frame.writeUInt32BE(frame.length, 1);
-  frame.writeUInt8(0, 5);
-  frame.writeUInt8(0, 6);
+  frame.writeUInt8(channel & 255, 5);
+  frame.writeUInt8(reliable ? 1 : 0, 6);
   payload.copy(frame, 7);
   return frame;
 }
 
 function buildPingResult(clientStamp) {
-  const frame = Buffer.alloc(5);
+  const frame = Buffer.alloc(9);
   frame.writeUInt8(PingMagic, 0);
-  frame.writeInt32BE(clientStamp, 1);
+  frame.writeInt32BE(nowMs32(), 1);
+  frame.writeInt32BE(clientStamp, 5);
   return frame;
 }
 
@@ -200,6 +224,8 @@ function parseTPeer(buffer) {
 
     out.push({
       type: "data",
+      channel: buffer.readUInt8(offset + 5),
+      reliable: buffer.readUInt8(offset + 6) !== 0,
       payload: Buffer.from(buffer.subarray(offset + 7, offset + length))
     });
 
@@ -290,6 +316,7 @@ class PhotonBridgePeer {
     this.closed = false;
 
     this.nextReliableSeq = 1;
+    this.nextUnreliableSeq = 1;
     this.udpConnectTimer = null;
     this.handshakeDeadline = Date.now() + 10000;
 
@@ -360,18 +387,30 @@ class PhotonBridgePeer {
     this.udp.send(ack, PHOTON_PORT, PHOTON_HOST);
   }
 
-  sendUdpPayload(payload) {
+  sendUdpPayload(payload, channel = 0, reliable = true) {
     if (this.closed || !this.udpReady) return;
 
-    const seq = this.nextReliableSeq++;
+    let packet;
 
-    const packet = buildUdpReliable(
-      payload,
-      0,
-      seq,
-      nowMs32(),
-      this.challenge
-    );
+    if (reliable) {
+      const seq = this.nextReliableSeq++;
+      packet = buildUdpReliable(
+        payload,
+        channel,
+        seq,
+        nowMs32(),
+        this.challenge
+      );
+    } else {
+      const seq = this.nextUnreliableSeq++;
+      packet = buildUdpUnreliable(
+        payload,
+        channel,
+        seq,
+        nowMs32(),
+        this.challenge
+      );
+    }
 
     this.udp.send(packet, PHOTON_PORT, PHOTON_HOST, (err) => {
       if (err) {
@@ -385,7 +424,8 @@ class PhotonBridgePeer {
     if (!this.udpReady || this.closed) return;
 
     while (this.pendingWsPayloads.length > 0) {
-      this.sendUdpPayload(this.pendingWsPayloads.shift());
+      const frame = this.pendingWsPayloads.shift();
+      this.sendUdpPayload(frame.payload, frame.channel, frame.reliable);
     }
   }
 
@@ -422,9 +462,9 @@ class PhotonBridgePeer {
       );
 
       if (this.udpReady) {
-        this.sendUdpPayload(payload);
+        this.sendUdpPayload(payload, frame.channel, frame.reliable);
       } else {
-        this.pendingWsPayloads.push(payload);
+        this.pendingWsPayloads.push(frame);
       }
     }
 
@@ -499,7 +539,10 @@ class PhotonBridgePeer {
         );
 
         if (this.ws.readyState === OPEN) {
-          this.ws.send(buildTPeerFrame(cmd.payload), { binary: true });
+          this.ws.send(
+            buildTPeerFrame(cmd.payload, cmd.channel, (cmd.flags & 1) !== 0),
+            { binary: true }
+          );
         }
 
         continue;
@@ -565,7 +608,10 @@ class PhotonBridgePeer {
 
     if (result.length >= 2 && result[0] === 0xF3 && this.ws.readyState === OPEN) {
       this.log("UDP fragments -> WS len=" + result.length);
-      this.ws.send(buildTPeerFrame(result), { binary: true });
+      this.ws.send(
+        buildTPeerFrame(result, 0, true),
+        { binary: true }
+      );
     }
   }
 
