@@ -1,23 +1,23 @@
 {
-    "companyName": "JustPlayReloaded.LOL",
-    "productName": "JustFallReloaded.LOL",
-    "productVersion": "1.0",
-    "dataUrl": "https://cdn.jsdelivr.net/gh/D3ch/hell@e1ef9902521cfadf702a3bea91ccaeb1684c0f0f/Games/just-fall/WebGL - RC.data.unityweb",
-    "wasmCodeUrl": "https://cdn.jsdelivr.net/gh/D3ch/hell@e1ef9902521cfadf702a3bea91ccaeb1684c0f0f/Games/just-fall/WebGL - RC.wasm.code.unityweb",
-    "wasmFrameworkUrl": "https://cdn.jsdelivr.net/gh/D3ch/hell@e1ef9902521cfadf702a3bea91ccaeb1684c0f0f/Games/just-fall/WebGL - RC.wasm.framework.unityweb",
-    "graphicsAPI": [
-        "WebGL 2.0",
-        "WebGL 1.0"
-    ],
-    "webglContextAttributes": {
-        "preserveDrawingBuffer": false
-    },
-    "splashScreenStyle": "Dark",
-    "backgroundColor": "#ffd700",
-    "cacheControl": {
-        "default": "must-revalidate"
-    },
-    "developmentBuild": false,
-    "multithreading": false,
-    "unityVersion": "2019.4.16f1"
+  "companyName": "JustPlayReloaded.LOL",
+  "productName": "JustFallReloaded.LOL",
+  "productVersion": "1.0",
+  "dataUrl": "WebGL - RC.data.unityweb",
+  "wasmCodeUrl": "WebGL - RC.wasm.code.unityweb",
+  "wasmFrameworkUrl": "WebGL - RC.wasm.framework.unityweb",
+  "graphicsAPI": [
+    "WebGL 2.0",
+    "WebGL 1.0"
+  ],
+  "webglContextAttributes": {
+    "preserveDrawingBuffer": false
+  },
+  "splashScreenStyle": "Dark",
+  "backgroundColor": "#ffd700",
+  "cacheControl": {
+    "default": "must-revalidate"
+  },
+  "developmentBuild": false,
+  "multithreading": false,
+  "unityVersion": "2019.4.16f1"
 }
