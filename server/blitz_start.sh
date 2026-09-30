@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu
+set -u
 
 PORT="${PORT:-8080}"
 PHOTON_PORT="${PHOTON_PORT:-27001}"
