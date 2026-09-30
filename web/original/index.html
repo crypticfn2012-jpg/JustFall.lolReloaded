@@ -100,7 +100,8 @@ window.hideAds = window.hideAds || function(){};
 <div id="connection-debug" style="position:fixed;right:10px;bottom:10px;z-index:50;max-width:520px;max-height:190px;overflow:auto;padding:9px 11px;background:rgba(0,0,0,.82);color:#b9d8ff;border:1px solid rgba(255,255,255,.14);font:11px/1.5 monospace;pointer-events:none"></div>
 <a id="back" href="https://crypticfn2012-jpg.github.io/JustFall.lolReloaded">← SITE</a>
 <script>
-const ORIGINAL="./WebGL.json";
+const GITHUB_RAW="https://raw.githubusercontent.com/crypticfn2012-jpg/JustFall.lolReloaded/main/web/original/";
+const ORIGINAL=GITHUB_RAW+"WebGL.json";
 window.JustFallReloaded.log("loader","Using "+ORIGINAL);
 window.gameInstance=UnityLoader.instantiate("gameContainer",ORIGINAL,{
   onProgress:function(_,progress){
