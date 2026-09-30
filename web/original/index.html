@@ -61,8 +61,36 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
 })();
 </script>
 <script>
-window.showAds = window.showAds || function(){};
-window.hideAds = window.hideAds || function(){};
+(function(){
+  // The preserved game occasionally calls the original site's ad hooks.
+  // The original ad provider is intentionally absent on Reloaded, so every
+  // ad entry point completes immediately instead of leaving the game waiting.
+  window.JustFallAdsDisabled = true;
+
+  function finish(callback){
+    if(typeof callback === "function"){
+      try { setTimeout(callback, 0); } catch(e){}
+    }
+    return true;
+  }
+
+  window.showAds = finish;
+  window.hideAds = finish;
+  window.showAd = finish;
+  window.hideAd = finish;
+  window.playAd = finish;
+  window.playAds = finish;
+  window.refreshAds = finish;
+
+  // Some preserved pages call the old CPMStar API directly. Make it a harmless
+  // no-op and trigger a supplied fail callback so ad code cannot block gameplay.
+  window.cpmstarAPI = function(command){
+    if(command && typeof command.fail === "function"){
+      try { setTimeout(command.fail, 0); } catch(e){}
+    }
+    return true;
+  };
+})();
 </script>
 <script src="./UnityLoader.js?v=2019.4.16f1"></script>
 </head>

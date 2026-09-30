@@ -39,7 +39,12 @@ const wss = new WebSocketServer({
   server,
   path: "/ws",
   perMessageDeflate: false,
-  maxPayload: 8 * 1024 * 1024
+  maxPayload: 8 * 1024 * 1024,
+  handleProtocols(protocols) {
+    if (protocols.has("GpBinaryV16")) return "GpBinaryV16";
+    const first = protocols.values().next();
+    return first.done ? false : first.value;
+  }
 });
 
 function nowMs32() {
