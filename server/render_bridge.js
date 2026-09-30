@@ -80,6 +80,26 @@ function buildUdpMessage(payload, channel, reliable, sequence, timestamp, challe
   return b;
 }
 
+function buildUdpAck(channel, ackedSeq, timestamp, challenge) {
+  const b = Buffer.alloc(32);
+  b.writeUInt16BE(0, 0);
+  b.writeUInt8(0, 2);
+  b.writeUInt8(1, 3);
+  b.writeUInt32BE(timestamp >>> 0, 4);
+  b.writeInt32BE(challenge, 8);
+
+  const o = 12;
+  b.writeUInt8(1, o);          // ACK
+  b.writeUInt8(channel & 255, o + 1);
+  b.writeUInt8(0, o + 2);      // ACK is unreliable
+  b.writeUInt8(0, o + 3);
+  b.writeUInt32BE(20, o + 4);  // 12-byte command + 8-byte payload
+  b.writeInt32BE(0, o + 8);
+  b.writeInt32BE(ackedSeq, o + 12);
+  b.writeUInt32BE(timestamp >>> 0, o + 16);
+  return b;
+}
+
 function buildTPeerFrame(payload, channel, reliable) {
   const b = Buffer.alloc(7 + payload.length);
   b.writeUInt8(TPeerMagic, 0);
@@ -158,6 +178,7 @@ function parseUdp(data) {
       fragment = {
         startSeq: data.readInt32BE(o + 12),
         count: data.readInt32BE(o + 16),
+        number: data.readInt32BE(o + 20),
         totalLength: data.readInt32BE(o + 24),
         offset: data.readInt32BE(o + 28)
       };
@@ -168,6 +189,7 @@ function parseUdp(data) {
       type,
       channel,
       reliable: (flags & 1) !== 0,
+      reliableSeq: data.readInt32BE(o + 8),
       payload: data.subarray(start, o + size),
       fragment
     });
@@ -182,8 +204,8 @@ wss.on("connection", (ws, req) => {
   const challenge = crypto.randomBytes(4).readInt32BE(0);
   let ready = false;
   let closed = false;
-  let reliableSeq = 1;
-  let unreliableSeq = 1;
+  const reliableSeq = new Map();
+  const unreliableSeq = new Map();
   const pending = [];
   const fragments = new Map();
 
@@ -199,6 +221,11 @@ wss.on("connection", (ws, req) => {
     try {
       for (const cmd of parseUdp(data)) {
         if (cmd.type === 3) {
+          // The UDP relay sent VERIFY_CONNECT as a reliable command. ACK it
+          // on the UDP side, but do not expose ENet control packets to TPeer.
+          if (cmd.reliable) {
+            sendUdp(buildUdpAck(cmd.channel, cmd.reliableSeq, data.readUInt32BE(4), challenge));
+          }
           ready = true;
           console.log("[WS] Photon UDP peer verified");
           flush();
@@ -207,7 +234,13 @@ wss.on("connection", (ws, req) => {
 
         if (cmd.type === 1) continue;
 
-        if (cmd.type === 6 || cmd.type === 7) {
+        if ((cmd.type === 6 || cmd.type === 7) && cmd.payload.length >= 2) {
+          // The WebSocket client has TCP/WebSocket reliability, so translate
+          // the UDP relay's reliable command into a TPeer frame. Still ACK the
+          // UDP command so the relay does not retransmit the same operation.
+          if (cmd.reliable) {
+            sendUdp(buildUdpAck(cmd.channel, cmd.reliableSeq, data.readUInt32BE(4), challenge));
+          }
           if (ws.readyState === ws.OPEN) {
             ws.send(buildTPeerFrame(cmd.payload, cmd.channel, cmd.reliable), { binary: true });
           }
@@ -225,14 +258,22 @@ wss.on("connection", (ws, req) => {
               buffer: Buffer.alloc(f.totalLength),
               count: f.count,
               received: 0,
+              parts: new Set(),
               channel: cmd.channel,
               reliable: cmd.reliable
             };
             fragments.set(key, a);
           }
 
-          cmd.payload.copy(a.buffer, f.offset);
-          a.received++;
+          if (cmd.reliable) {
+            sendUdp(buildUdpAck(cmd.channel, cmd.reliableSeq, data.readUInt32BE(4), challenge));
+          }
+
+          if (!a.parts.has(f.number)) {
+            cmd.payload.copy(a.buffer, f.offset);
+            a.parts.add(f.number);
+            a.received++;
+          }
 
           if (a.received >= a.count) {
             fragments.delete(key);
@@ -270,7 +311,9 @@ wss.on("connection", (ws, req) => {
           continue;
         }
 
-        const seq = frame.reliable ? reliableSeq++ : unreliableSeq++;
+        const seqMap = frame.reliable ? reliableSeq : unreliableSeq;
+        const seq = (seqMap.get(frame.channel) || 0) + 1;
+        seqMap.set(frame.channel, seq);
         const packet = buildUdpMessage(
           frame.payload,
           frame.channel,
