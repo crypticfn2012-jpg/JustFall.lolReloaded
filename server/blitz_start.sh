@@ -3,7 +3,7 @@ set -eu
 
 PORT="${PORT:-8080}"
 PHOTON_PORT="${PHOTON_PORT:-27001}"
-PUBLIC_HOST="${PUBLIC_HOST:-wss://localhost/ws}"
+PUBLIC_HOST="${PUBLIC_HOST:-wss://justfall-lolreloaded.justfalllol.blitz.cloud/ws}"
 
 cat > /app/config.json <<EOF
 {
