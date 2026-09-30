@@ -62,7 +62,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
     window.JustFallReloaded.socketCount++;
     window.JustFallReloaded.sockets.push(ws);
     var id=window.JustFallReloaded.socketCount;
-    window.JustFallReloaded.log("ws.create", "#"+id+" "+String(url));
+    window.JustFallReloaded.log("ws.create", "#"+id+" requested="+String(url)+" target="+String(ws.url));
     ws.addEventListener("open",function(){
       window.JustFallReloaded.log("ws.open","#"+id);
     });
