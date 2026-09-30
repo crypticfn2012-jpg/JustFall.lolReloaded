@@ -47,8 +47,11 @@ sleep 1
 if kill -0 "$PHOTON_PID" 2>/dev/null; then
   echo "Photon process is running (pid $PHOTON_PID)"
 else
-  echo "Photon process exited during startup"
+  echo "FATAL: Photon process exited during startup"
+  echo "----- photon.log -----"
   cat /app/photon.log 2>/dev/null || true
+  echo "----------------------"
+  exit 1
 fi
 
 echo "Starting WSS bridge..."
@@ -69,9 +72,11 @@ fi
 # and expose the Photon crash in /app/photon.log / stdout.
 while kill -0 "$BRIDGE_PID" 2>/dev/null; do
   if [ -n "${PHOTON_PID:-}" ] && ! kill -0 "$PHOTON_PID" 2>/dev/null; then
-    echo "WARNING: Photon server process $PHOTON_PID stopped"
+    echo "FATAL: Photon server process $PHOTON_PID stopped"
+    echo "----- photon.log -----"
     cat /app/photon.log 2>/dev/null || true
-    PHOTON_PID=
+    echo "----------------------"
+    exit 1
   fi
   sleep 2
 done
