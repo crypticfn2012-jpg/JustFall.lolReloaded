@@ -79,7 +79,14 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050505}bod
     return ws;
   };
   window.WebSocket.prototype = OriginalWS.prototype;
+
+  // Preserve the native WebSocket constants used by Unity's WebGL networking code.
+  window.WebSocket.CONNECTING = OriginalWS.CONNECTING;
+  window.WebSocket.OPEN = OriginalWS.OPEN;
+  window.WebSocket.CLOSING = OriginalWS.CLOSING;
+  window.WebSocket.CLOSED = OriginalWS.CLOSED;
 })();
+
 </script>
 <script>
 window.showAds = window.showAds || function(){};
