@@ -26,8 +26,7 @@ s = server.read_text()
 # as a Photon redirect address; do not append a UDP port.
 old = """            // The game-server port the client redirects to is fixed by the SDK's
             // ServerPortOverrides (UDP GameServer = 27002), so advertise that.
-            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];
-            _publicAddress = $"{config.PublicHost}:{gamePort}";
+            _publicAddress = config.PublicHost;
 """
 new = """            // For the browser build, the region/game-server redirect must stay
             // on the public WSS bridge. The bridge then forwards Photon packets
@@ -86,7 +85,17 @@ s = s.replace(auth_old, auth_new, 1)
 # UDP is only needed by the local WSS bridge. Bind loopback in Blitz,
 # with a safe fallback for local/non-sandbox environments.
 bind_old = """            foreach (int p in _ports)
-                _sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Any, p)));"""
+            {
+                try
+                {
+                    _sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Loopback, p)));
+                }
+                catch (Exception loopbackError)
+                {
+                    Log($"[Server] loopback bind {p} failed: {loopbackError.Message}; trying Any");
+                    _sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Any, p)));
+                }
+            }"""
 bind_new = """            foreach (int p in _ports)
             {
                 try
@@ -105,7 +114,7 @@ s = s.replace(bind_old, bind_new, 1)
 
 # Containerized Blitz has no interactive stdin. Disable the optional console
 # reader so the Photon process is not terminated when stdin closes.
-console_old = """            StartConsoleThread();"""
+console_old = """            // StartConsoleThread();"""
 console_new = """            // StartConsoleThread();"""
 if console_old not in s:
     raise SystemExit("StartConsoleThread call not found in PhotonServer.cs")
