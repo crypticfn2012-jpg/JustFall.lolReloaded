@@ -1,5 +1,5 @@
 #!/bin/sh
-set -u
+set -eu
 
 PORT="${PORT:-8080}"
 PHOTON_PORT="${PHOTON_PORT:-27001}"
@@ -66,7 +66,7 @@ fi
 # If Photon dies, keep the WSS bridge alive so Blitz does not restart-loop,
 # and expose the Photon crash in /app/photon.log / stdout.
 while kill -0 "$BRIDGE_PID" 2>/dev/null; do
-  if ! kill -0 "$PHOTON_PID" 2>/dev/null; then
+  if [ -n "${PHOTON_PID:-}" ] && ! kill -0 "$PHOTON_PID" 2>/dev/null; then
     echo "WARNING: Photon server process $PHOTON_PID stopped"
     cat /app/photon.log 2>/dev/null || true
     PHOTON_PID=
