@@ -83,9 +83,8 @@ if auth_old not in s:
 s = s.replace(auth_old, auth_new, 1)
 
 
-# The public network entry point is WSS on blitz.cloud. The Photon relay only
-# needs to be reachable by the local WSS bridge, so bind its UDP socket to
-# loopback first. Fall back to Any for non-sandbox/local environments.
+# UDP is only needed by the local WSS bridge. Bind loopback in Blitz,
+# with a safe fallback for local/non-sandbox environments.
 bind_old = """            foreach (int p in _ports)
                 _sockets.Add(new UdpClient(new IPEndPoint(IPAddress.Any, p)));"""
 bind_new = """            foreach (int p in _ports)
@@ -103,16 +102,6 @@ bind_new = """            foreach (int p in _ports)
 if bind_old not in s:
     raise SystemExit("PhotonServer UDP bind block not found")
 s = s.replace(bind_old, bind_new, 1)
-
-addr_old = """            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];
-            _publicAddress = $"{config.PublicHost}:{gamePort}";"""
-addr_new = """            int gamePort = _ports.Contains(27002) ? 27002 : _ports[0];
-            _publicAddress = config.PublicHost.Contains("://", StringComparison.Ordinal)
-                ? config.PublicHost
-                : $"{config.PublicHost}:{gamePort}";"""
-if addr_old not in s:
-    raise SystemExit("PhotonServer public address block not found")
-s = s.replace(addr_old, addr_new, 1)
 
 server.write_text(s)
 # Add the common room-property operations used during game initialization.
