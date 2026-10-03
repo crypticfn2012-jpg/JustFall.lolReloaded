@@ -1,4 +1,4 @@
-name: Deploy JustFall.lol Reloaded
+name: Deploy Penguin Plunge
 
 on:
   push:
@@ -15,10 +15,8 @@ permissions:
   pages: write
   id-token: write
 
-# Queue Pages deployments instead of cancelling an older deployment whenever
-# several server/debug commits are pushed close together.
 concurrency:
-  group: pages
+  group: penguin-pages
   cancel-in-progress: false
 
 jobs:
@@ -27,24 +25,13 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
-      - name: Download original Unity build assets
-        run: |
-          set -e
-          cd web/original
-          base="https://raw.githubusercontent.com/D3ch/hell/e1ef9902521cfadf702a3bea91ccaeb1684c0f0f/Games/just-fall"
-          curl -fL "$base/WebGL%20-%20RC.data.unityweb" -o "WebGL - RC.data.unityweb"
-          curl -fL "$base/WebGL%20-%20RC.wasm.code.unityweb" -o "WebGL - RC.wasm.code.unityweb"
-          curl -fL "$base/WebGL%20-%20RC.wasm.framework.unityweb" -o "WebGL - RC.wasm.framework.unityweb"
-          test -s "WebGL - RC.data.unityweb"
-          test -s "WebGL - RC.wasm.code.unityweb"
-          test -s "WebGL - RC.wasm.framework.unityweb"
 
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
