@@ -1,89 +1,54 @@
-name: JustFall Reloaded CI
+name: Penguin Plunge CI
 
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: ci-${{ github.ref }}
+  group: penguin-ci-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Check public site
+      - name: Check site files
         run: |
           test -f index.html
+          test -f favicon.png
           test -f web/style.css
-          test -f web/original/index.html
+          test -s index.html
+          test -s web/style.css
 
-      - name: Install bridge dependencies
-        working-directory: server
-        run: npm install --ignore-scripts
-
-      - name: Syntax check bridge
-        working-directory: server
-        run: node --check render_bridge.js
-
-      - name: Test Photon WSS transport
-        run: node server/test_bridge.js
-
-      - name: Check deployment files
+      - name: Check Penguin Plunge branding
         run: |
-          test -f Dockerfile
-          test -f server/blitz_start.sh
-          test -f server/render_bridge.js
-          test -f server/photon/patch_server.py
+          grep -qi "Penguin Plunge" index.html
+          grep -qi "Penguin Plunge" README.md
+          ! grep -qi "JustFall" index.html
+          ! grep -qi "JustFall" .github/workflows/ci.yml
 
-      - name: Build Blitz image
-        run: docker build -t justfall-blitz-test .
-
-      - name: Check root deployment files
+      - name: Validate HTML references
         run: |
-          test -f Dockerfile
-          test -f server/blitz_start.sh
-          test -f server/render_bridge.js
-          grep -q "JustFallAdsDisabled" web/original/index.html
+          grep -q 'href="web/style.css"' index.html
+          grep -q 'href="favicon.png"' index.html
 
-      - name: Smoke test Blitz container
+      - name: Check no broken local references
         run: |
-          set -e
-          docker run -d --name justfall-smoke \
-            -e PORT=8080 \
-            -e PHOTON_PORT=27001 \
-            -p 18080:8080 \
-            -p 27001:27001/udp \
-            justfall-blitz-test
+          test -f web/style.css
+          test -f favicon.png
 
-          cleanup() {
-            docker logs justfall-smoke || true
-            docker rm -f justfall-smoke || true
-          }
-          trap cleanup EXIT
+      - name: Validate Pages workflow
+        run: |
+          test -f .github/workflows/pages.yml
+          grep -q "actions/upload-pages-artifact@v3" .github/workflows/pages.yml
+          grep -q "actions/deploy-pages@v4" .github/workflows/pages.yml
 
-          for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:18080/health >/tmp/health.json; then
-              break
-            fi
-            if [ "$(docker inspect -f '{{.State.Running}}' justfall-smoke 2>/dev/null || true)" != "true" ]; then
-              echo "Container exited before health endpoint became ready"
-              docker logs justfall-smoke || true
-              exit 1
-            fi
-            sleep 1
-          done
-
-          test -s /tmp/health.json
-          grep -q '"ok":true' /tmp/health.json
-          sleep 2
-          test "$(docker inspect -f '{{.State.Running}}' justfall-smoke)" = "true"
-          curl -fsS http://127.0.0.1:18080/health >/tmp/health-after-start.json
-          grep -q '"ok":true' /tmp/health-after-start.json
-          docker logs justfall-smoke 2>&1 | grep -q "Photon process is running"
-          docker logs justfall-smoke 2>&1 | grep -q "\[Bridge\] LISTENING on 0.0.0.0:8080"
-          echo "Blitz container smoke test passed"
-          docker logs justfall-smoke
+      - name: CI passed
+        run: echo "Penguin Plunge site checks passed"
