@@ -32,7 +32,6 @@ jobs:
           grep -qi "Penguin Plunge" index.html
           grep -qi "Penguin Plunge" README.md
           ! grep -qi "JustFall" index.html
-          ! grep -qi "JustFall" .github/workflows/ci.yml
 
       - name: Validate HTML references
         run: |
