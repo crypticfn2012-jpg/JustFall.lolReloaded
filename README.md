@@ -1,52 +1,40 @@
-# JustFall.lol Reloaded
+# Penguin Plunge
 
-JustFall.lol Reloaded is a fan-made preservation project for the old JustFall.LOL browser game.
+Penguin Plunge is a fun browser game inspired by the party-game chaos of Fall Guys, but with penguins.
 
-The goal is to keep the original Unity WebGL client playable and bring its online multiplayer back with a replacement Photon-compatible server.
+Compete across different game modes, survive the chaos, and make it to the end.
 
-## Project layout
+## Game modes
 
-- `index.html` — public GitHub Pages site
-- `web/original/` — launcher for the original Unity WebGL client
-- `web/style.css` — site styling
-- `server/` — WebSocket gateway and Photon-compatible relay
-- `supabase/` — account/profile database migrations
-- `docs/` — notes about the original client and network setup
+- **Hexagon** — stay alive as the platforms disappear beneath you
+- **Race** — get to the finish before everyone else
+- **Halloween LTM** — a limited-time Halloween mode with a spooky twist
 
-## Local site
+More modes and content are planned for the beta and beyond.
 
-From the repo folder:
+## Beta
 
-```text
-py -m http.server 8080
-```
+The **Penguin Plunge beta is expected to release in around 2 weeks**.
 
-Then open:
+The game is not publicly playable yet while we finish development and prepare the beta.
 
-```text
-http://localhost:8080/
-```
+## Follow Penguin Plunge
 
-## Multiplayer
+- **YouTube:** https://www.youtube.com/@penguinplungeofficial
+- **Discord:** https://discord.gg/vaxBhvxuWr
 
-The browser client uses Photon over WebSocket/WSS. The replacement network has to speak the same binary protocol; a normal JSON WebSocket server will not work.
+## Development
 
-The public server is intended to be:
+Penguin Plunge is being developed by PixelForge Studios.
 
-```text
-Unity WebGL client
-        ↓
-WSS gateway
-        ↓
-Photon-compatible relay
-        ↓
-rooms / matchmaking
-```
+The project is currently focused on getting the beta ready and building out the core game modes, maps, systems, and polish.
 
-## Current state
+## Repository
 
-The original Unity client loads in the browser.
+This repository contains the Penguin Plunge project and its web/game development files.
 
-The multiplayer server code is still being brought online and tested against the real client. The site should not be treated as having working public multiplayer until that connection succeeds.
+The project was previously used for JustFall.lol Reloaded and has now been rebranded and repurposed for Penguin Plunge.
 
-This project is not affiliated with JustPlay.LOL or Exit Games.
+---
+
+**Penguin Plunge** — penguins, chaos, and game modes. Coming soon.
